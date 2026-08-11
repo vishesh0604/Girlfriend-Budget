@@ -1,8 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #e5f6ff;
+  --foreground: #26354d;
+
+  --baby-blue: #e5f6ff;
+  --baby-blue-deep: #cfeeff;
+
+  --baby-pink: #ffdce9;
+  --baby-pink-soft: #ffe8f0;
+  --baby-pink-border: #f3b9cd;
+
+  --navy: #26354d;
+  --muted: #647086;
+
+  --accent-blue: #4f8fbd;
+  --accent-blue-dark: #3978a5;
+
+  --accent-pink: #d96b91;
+  --accent-pink-dark: #c4567d;
 }
 
 @theme inline {
@@ -12,15 +28,191 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* -------------------------------------------------------
+   GLOBAL BASE
+------------------------------------------------------- */
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  margin: 0;
+  background: var(--baby-blue);
+  color: var(--navy);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* -------------------------------------------------------
+   MAIN APPLICATION BACKGROUND
+------------------------------------------------------- */
+
+/*
+ * The dashboard currently uses Tailwind's bg-zinc-50.
+ * Override it centrally so we don't have to touch
+ * financial/dashboard logic.
+ */
+.bg-zinc-50 {
+  background-color: var(--baby-blue) !important;
+}
+
+/* -------------------------------------------------------
+   CARDS
+------------------------------------------------------- */
+
+/*
+ * Existing application cards use bg-white.
+ * Turn those into baby-pink cards.
+ */
+.bg-white {
+  background-color: var(--baby-pink) !important;
+}
+
+/* Softer pink card borders */
+.border-zinc-200 {
+  border-color: var(--baby-pink-border) !important;
+}
+
+.border-zinc-100 {
+  border-color: #f5cad9 !important;
+}
+
+/* -------------------------------------------------------
+   TEXT
+------------------------------------------------------- */
+
+.text-zinc-950 {
+  color: var(--navy) !important;
+}
+
+.text-zinc-900 {
+  color: #2d3b54 !important;
+}
+
+.text-zinc-800 {
+  color: #34445e !important;
+}
+
+.text-zinc-700 {
+  color: #465671 !important;
+}
+
+.text-zinc-600 {
+  color: #596780 !important;
+}
+
+.text-zinc-500 {
+  color: var(--muted) !important;
+}
+
+.text-zinc-400 {
+  color: #7b879b !important;
+}
+
+/* -------------------------------------------------------
+   INTERNAL INPUTS / SELECTS / TEXTAREAS
+------------------------------------------------------- */
+
+/*
+ * Keep controls visually distinct from the pink cards.
+ * They become a very light blue/white tone.
+ */
+input,
+select,
+textarea {
+  color: var(--navy);
+}
+
+input.bg-white,
+select.bg-white,
+textarea.bg-white {
+  background-color: #f8fcff !important;
+}
+
+/* -------------------------------------------------------
+   COMMON BORDERS
+------------------------------------------------------- */
+
+input.border-zinc-200,
+select.border-zinc-200,
+textarea.border-zinc-200 {
+  border-color: #c9ddea !important;
+}
+
+/* -------------------------------------------------------
+   BUTTON ACCENTS
+------------------------------------------------------- */
+
+/*
+ * Existing black buttons become a soft professional blue.
+ */
+.bg-black {
+  background-color: var(--accent-blue) !important;
+}
+
+.bg-black:hover,
+.hover\:bg-black:hover {
+  background-color: var(--accent-blue-dark) !important;
+}
+
+/* -------------------------------------------------------
+   SECONDARY BLUE/PINK DETAILS
+------------------------------------------------------- */
+
+.bg-zinc-100 {
+  background-color: var(--baby-pink-soft) !important;
+}
+
+.bg-zinc-200 {
+  background-color: var(--baby-blue-deep) !important;
+}
+
+.hover\:bg-zinc-100:hover {
+  background-color: #ffdfea !important;
+}
+
+.hover\:bg-zinc-200:hover {
+  background-color: #c6e8fa !important;
+}
+
+/* -------------------------------------------------------
+   DIVIDERS
+------------------------------------------------------- */
+
+.divide-zinc-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--baby-pink-border) !important;
+}
+
+/* -------------------------------------------------------
+   SHADOWS
+------------------------------------------------------- */
+
+.shadow-sm {
+  box-shadow:
+    0 2px 8px rgba(73, 104, 129, 0.08) !important;
+}
+
+/* -------------------------------------------------------
+   FOCUS STATES
+------------------------------------------------------- */
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 3px rgba(79, 143, 189, 0.15);
+}
+
+/* -------------------------------------------------------
+   LINKS
+------------------------------------------------------- */
+
+a {
+  color: var(--accent-blue-dark);
+}
+
+a:hover {
+  color: var(--accent-pink-dark);
 }

@@ -13,16 +13,19 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
 
     setIsLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
     if (error) {
       setError(error.message);
@@ -35,21 +38,36 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-100 px-4 flex items-center justify-center">
-      <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-purple-100 bg-white/95 p-8 shadow-xl shadow-purple-100/60 backdrop-blur-sm">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#e5f6ff] px-4">
+
+      {/* Decorative background shapes */}
+      <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#cfeeff]" />
+
+      <div className="pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-[#cfeeff]" />
+
+      <div className="pointer-events-none absolute right-16 top-1/3 h-24 w-24 rounded-full bg-[#dff2ff]" />
+
+      <div className="pointer-events-none absolute bottom-20 left-16 h-20 w-20 rounded-full bg-[#dff2ff]" />
+
+      {/* Login Card */}
+      <div className="relative z-10 w-full max-w-md">
+
+        <div className="rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-8 shadow-xl shadow-[#9bbfd2]/30">
 
           {/* Header */}
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-100">
+
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ffe8f0]">
+
               <svg
                 width="32"
                 height="32"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="currentColor"
+                stroke="#4f8fbd"
                 strokeWidth="1.8"
-                className="text-purple-600"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
                 <rect
                   x="3"
@@ -58,28 +76,40 @@ export default function HomePage() {
                   height="14"
                   rx="2"
                 />
+
                 <path d="M16 9h5v6h-5a3 3 0 0 1 0-6Z" />
-                <circle cx="16" cy="12" r="0.8" fill="currentColor" />
+
+                <circle
+                  cx="16"
+                  cy="12"
+                  r="0.8"
+                  fill="#4f8fbd"
+                />
               </svg>
+
             </div>
 
-            <h1 className="text-3xl font-bold tracking-tight text-purple-700">
+            <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
               Budget Tracker
             </h1>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-[#647086]">
               Sign in to manage your monthly budget.
             </p>
+
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form
+            onSubmit={handleLogin}
+            className="space-y-5"
+          >
 
             {/* Email */}
             <div>
               <label
                 htmlFor="email"
-                className="mb-2 block text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-[#34445e]"
               >
                 Email
               </label>
@@ -88,11 +118,13 @@ export default function HomePage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
                 required
                 autoComplete="email"
                 placeholder="you@example.com"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
+                className="w-full rounded-xl border border-[#c9ddea] bg-[#f8fcff] px-4 py-3 text-[#26354d] outline-none transition focus:border-[#4f8fbd] focus:ring-4 focus:ring-[#cfeeff]"
               />
             </div>
 
@@ -100,7 +132,7 @@ export default function HomePage() {
             <div>
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-[#34445e]"
               >
                 Password
               </label>
@@ -109,11 +141,13 @@ export default function HomePage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
                 required
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
+                className="w-full rounded-xl border border-[#c9ddea] bg-[#f8fcff] px-4 py-3 text-[#26354d] outline-none transition focus:border-[#4f8fbd] focus:ring-4 focus:ring-[#cfeeff]"
               />
             </div>
 
@@ -128,17 +162,16 @@ export default function HomePage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-violet-600 px-4 py-3 font-semibold text-white shadow-md shadow-purple-200 transition hover:from-purple-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-xl bg-[#4f8fbd] px-4 py-3 font-semibold text-white shadow-md shadow-[#9bbfd2]/30 transition hover:bg-[#3978a5] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading
+                ? "Signing in..."
+                : "Sign in"}
             </button>
+
           </form>
         </div>
       </div>
-
-      {/* Decorative background elements */}
-      <div className="pointer-events-none fixed -right-24 -top-24 h-72 w-72 rounded-full bg-purple-200/40 blur-3xl" />
-      <div className="pointer-events-none fixed -bottom-32 -left-24 h-80 w-80 rounded-full bg-violet-200/50 blur-3xl" />
     </main>
   );
 }

@@ -137,40 +137,36 @@ export default async function DashboardPage({
   } else {
     /*
      * No month specified:
-     * load the most recently created month.
+     * always open the current calendar month.
+     *
+     * Existing historical/future months are preserved.
+     * If the current month does not exist yet,
+     * initialize it automatically.
      */
+    const currentMonth = getCurrentMonthStart();
+
     const {
-      data: latestBudget,
-      error: latestBudgetError,
+      data: currentBudget,
+      error: currentBudgetError,
     } = await supabase
       .from("monthly_budgets")
       .select("id, month_start, salary")
       .eq("user_id", user.id)
-      .order("month_start", {
-        ascending: false,
-      })
-      .limit(1)
+      .eq("month_start", currentMonth)
       .maybeSingle();
 
-    if (latestBudgetError) {
+    if (currentBudgetError) {
       throw new Error(
-        latestBudgetError.message
+        currentBudgetError.message
       );
     }
 
-    monthlyBudget = latestBudget;
+    monthlyBudget = currentBudget;
 
-    /*
-     * If no month exists at all, initialize the
-     * current calendar month.
-     */
     if (!monthlyBudget) {
-      const initialMonth =
-        getCurrentMonthStart();
-
       const result =
         await initializeMonthlyBudget(
-          initialMonth
+          currentMonth
         );
 
       if (!result.success) {
@@ -188,7 +184,7 @@ export default async function DashboardPage({
         .eq("user_id", user.id)
         .eq(
           "month_start",
-          initialMonth
+          currentMonth
         )
         .single();
 
@@ -205,7 +201,6 @@ export default async function DashboardPage({
       monthlyBudget = refreshed.data;
     }
   }
-
   const {
     data: monthlyHeads,
     error: monthlyHeadsError,
