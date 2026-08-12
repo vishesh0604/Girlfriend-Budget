@@ -227,6 +227,458 @@ Preparing the application for Step 14: mobile UI.
 - Record remaining issues
 - Confirm implementation status
 
+# Bank Account Tracker — Build Plan
+
+## Objective
+
+Add a separate Bank Account tracker to the budgeting application.
+
+The Bank Account tracker is ONLY concerned with money allocated to:
+
+- Fixed Expenses
+- Investments
+
+It is NOT connected to:
+
+- Spending Pool
+- Salary leftover
+- Savings budget heads
+- Other budget heads
+
+The tracker represents the amount of money that should remain in the bank account from the Fixed Expense + Investment pool.
+
+---
+
+# Step 1 — Define Bank Account Logic
+
+## Eligible Budget Heads
+
+Only budget heads with the following types are included:
+
+- `Fixed Expense`
+- `Investment`
+
+The following are excluded:
+
+- `Saving`
+- `Other`
+- Spending Pool
+- Salary
+
+## First Month
+
+For the first month being tracked:
+
+`Starting Bank Balance = Total Fixed Expense Allocations + Total Investment Allocations`
+
+Example:
+
+- Salary = ₹31,500
+- Fixed Expenses + Investments = ₹16,500
+- Spending Pool = ₹15,000
+
+The Bank Account tracker starts at:
+
+`₹16,500`
+
+The ₹15,000 Spending Pool is completely ignored.
+
+## Actual Payments
+
+A budget head only reduces the Bank Account balance when an actual payment is recorded.
+
+Example:
+
+- Netflix allocation = ₹495
+- Netflix paid = ₹495
+
+Bank Account:
+
+`₹16,500 - ₹495 = ₹16,005`
+
+If:
+
+- Rent allocation = ₹1,666
+- Rent paid = ₹0
+
+Rent does NOT reduce the Bank Account balance yet.
+
+## Partial Payments
+
+Only the actual paid amount is deducted.
+
+Example:
+
+- Investment allocation = ₹5,000
+- Investment paid = ₹2,000
+
+Only ₹2,000 is deducted from the Bank Account.
+
+## Monthly Carry-Forward
+
+At the end of each month, the remaining Bank Account balance is carried forward.
+
+Example:
+
+August:
+
+- Starting Balance = ₹16,500
+- Actual Payments = ₹12,500
+- Ending Balance = ₹4,000
+
+September:
+
+`Previous Ending Balance + September Fixed/Investment Allocations`
+
+`₹4,000 + ₹16,500 = ₹20,500`
+
+September therefore starts with ₹20,500.
+
+## Subsequent Month Formula
+
+For every month after the first:
+
+`Starting Balance = Previous Month Ending Balance + Current Month Fixed Expense Allocations + Current Month Investment Allocations`
+
+Then:
+
+`Ending Balance = Starting Balance - Actual Paid Amount`
+
+## Historical Months
+
+Historical months must never be retroactively changed by:
+
+- Creating a new budget head
+- Changing a budget head's default allocation
+- Changing a future allocation
+- Changing current budget configuration
+
+Each month's Bank Account balance must represent that month's actual historical state.
+
+## Allocation vs Payment
+
+Allocation and payment are separate concepts.
+
+An allocation represents the amount planned for a budget head.
+
+A payment represents money that has actually left the bank.
+
+Only the payment amount affects the Bank Account balance.
+
+## Transfers
+
+Transfers between budget heads must be explicitly evaluated before being included in the Bank Account calculation.
+
+A budget transfer should not automatically be treated as money leaving the bank.
+
+The Bank Account tracker should only reflect actual money movement.
+
+---
+
+# Step 2 — Database Structure
+
+Create persistent monthly Bank Account records.
+
+The database structure should maintain:
+
+- User
+- Monthly Budget
+- Starting Balance
+- Fixed + Investment Allocation
+- Actual Paid Amount
+- Ending Balance
+- Created At
+- Updated At
+
+Verify:
+
+- Column types
+- Foreign keys
+- Unique constraints
+- RLS/security
+- One Bank Account record per user per month
+
+---
+
+# Step 3 — Calculation Engine
+
+Create the Bank Account calculation logic independently from the UI.
+
+Required calculations:
+
+`Starting Balance`
+
+`+ Current Fixed Expense + Investment Allocations`
+
+`- Actual Paid Amount`
+
+`= Ending Balance`
+
+For subsequent months:
+
+`Previous Ending Balance`
+
+`+ Current Fixed Expense + Investment Allocations`
+
+`- Actual Paid Amount`
+
+`= Ending Balance`
+
+Test with artificial values before connecting to the UI.
+
+---
+
+# Step 4 — Connect Existing Budget Heads
+
+Connect the Bank Account calculation to the existing:
+
+`monthly_budget_heads`
+
+data.
+
+Use:
+
+- `allocated_amount`
+- `paid_amount`
+- `budget_heads.head_type`
+
+Do not create duplicate financial records for individual budget heads.
+
+Only Fixed Expense and Investment heads contribute to the Bank Account calculation.
+
+---
+
+# Step 5 — Handle Transfers
+
+Determine how existing budget-head transfers affect the Bank Account.
+
+A transfer between budget heads is not automatically a bank transaction.
+
+Verify that:
+
+- Internal budget transfers do not incorrectly reduce the bank balance.
+- Actual payments continue to reduce the bank balance correctly.
+- The existing Dashboard transfer functionality remains unchanged.
+
+---
+
+# Step 6 — Historical Month Protection
+
+Ensure that historical Bank Account balances remain fixed.
+
+Changing a budget head's:
+
+- Name
+- Default allocation
+- Active/deactive status
+- Type
+
+must not retroactively rewrite historical Bank Account balances.
+
+Future months may use updated configuration according to the existing monthly-budget rules.
+
+---
+
+# Step 7 — Bank Account Server Action
+
+Create the server-side Bank Account logic.
+
+It should:
+
+1. Identify the selected month.
+2. Load the monthly budget.
+3. Load the month's budget heads.
+4. Filter Fixed Expense and Investment heads.
+5. Calculate their total allocation.
+6. Calculate actual paid amounts.
+7. Retrieve the previous month's ending balance.
+8. Calculate the current month's starting balance.
+9. Calculate the current month's ending balance.
+10. Persist the result.
+11. Return the result to the UI.
+
+---
+
+# Step 8 — Automatic Monthly Initialization
+
+Integrate Bank Account initialization with the existing monthly budget initialization.
+
+When a new month is created:
+
+- Its Fixed Expense + Investment allocations are included.
+- Its previous month's ending Bank Account balance is carried forward.
+- Historical months remain unchanged.
+- Future months use the appropriate current budget-head configuration.
+
+No separate manual initialization should be required from the user.
+
+---
+
+# Step 9 — Bank Account Page
+
+Create a separate page where the user can view the Bank Account tracker.
+
+The page should show:
+
+- Selected Month
+- Starting Bank Balance
+- Fixed Expense Allocation
+- Investment Allocation
+- Total Added
+- Actual Paid
+- Current Bank Balance
+
+Example:
+
+BANK ACCOUNT
+
+Starting Balance       ₹4,000
+Fixed Expenses         ₹10,000
+Investments             ₹6,500
+Total Added            ₹16,500
+Paid                    ₹2,495
+--------------------------------
+Current Balance        ₹18,005
+
+The page must clearly communicate that this is NOT the Spending Pool.
+
+---
+
+# Step 10 — Month Navigation
+
+The Bank Account page must support the same monthly navigation system as the Dashboard.
+
+Verify:
+
+- Previous month
+- Current month
+- Future month
+- Correct starting balance
+- Correct carry-forward
+- Correct payments
+- Correct ending balance
+
+---
+
+# Step 11 — Bank Account Breakdown
+
+Provide enough information for the user to understand how the balance was calculated.
+
+Show:
+
+- Starting balance
+- Fixed Expense total
+- Investment total
+- Payments made
+- Ending/current balance
+
+The user should never have to guess where the displayed balance came from.
+
+---
+
+# Step 12 — Mathematical Validation
+
+Test the following cases.
+
+### Test A — First Month
+
+Fixed + Investment = Starting Balance.
+
+### Test B — Nothing Paid
+
+The full eligible allocation remains in the account.
+
+### Test C — Everything Paid
+
+The eligible allocation is fully deducted.
+
+### Test D — Partial Payment
+
+Only the actual paid amount is deducted.
+
+### Test E — Unpaid Expense
+
+An unpaid allocation does not reduce the Bank Account.
+
+### Test F — Savings
+
+Saving budget heads have zero effect on the Bank Account.
+
+### Test G — Other
+
+Other budget heads have zero effect.
+
+### Test H — Spending Pool
+
+Spending Pool has zero effect.
+
+### Test I — Carry Forward
+
+Previous month's ending balance becomes part of the next month's starting balance.
+
+### Test J — Historical Month
+
+Changing current/future configuration does not modify historical Bank Account balances.
+
+---
+
+# Step 13 — UI / Application Testing
+
+Verify:
+
+- Login
+- Home
+- Dashboard
+- Customize Budget
+- Bank Account
+- Logout
+- Navigation between all pages
+- Desktop layout
+- Mobile layout
+- Refresh behavior
+- Month navigation
+- Error handling
+
+---
+
+# Step 14 — Production Audit
+
+Final audit covering:
+
+- Database integrity
+- RLS/security
+- Monthly initialization
+- Bank Account calculations
+- Fixed Expense filtering
+- Investment filtering
+- Spending Pool exclusion
+- Savings exclusion
+- Other exclusion
+- Payment calculations
+- Carry-forward
+- Historical protection
+- Future-month behavior
+- Transfers
+- UI
+- Navigation
+- Responsive layout
+- Production build
+- Git/deployment integrity
+
+Final result:
+
+`BANK ACCOUNT TRACKER — PASS / FAIL`
+
+---
+
+# Current Progress
+
+## Bank Account Tracker
+
+Step 1 — Define Bank Account Logic: COMPLETE
+
+Steps 2–14: NOT STARTED
+
 ## Next Task
 
 1. Configure Supabase authentication. 🟢

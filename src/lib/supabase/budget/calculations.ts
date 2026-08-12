@@ -259,3 +259,114 @@ export function calculateHeadState(
     carryForward,
   };
 }
+export function calculateBankAccountAllocation(
+  heads: Array<{
+    amount?: number | null;
+    headType?: string | null;
+  }>
+): number {
+  return heads.reduce((total, head) => {
+    const amount = safeAmount(head.amount);
+
+    const normalizedType = (head.headType ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+
+    const isBankAccountEligible =
+      normalizedType === "fixed_expense" ||
+      normalizedType === "investment";
+
+    return isBankAccountEligible
+      ? total + amount
+      : total;
+  }, 0);
+}
+
+export function calculateBankAccountPaidAmount(
+  heads: Array<{
+    paidAmount?: number | null;
+    headType?: string | null;
+  }>
+): number {
+  return heads.reduce((total, head) => {
+    const paidAmount = safeAmount(
+      head.paidAmount
+    );
+
+    const normalizedType = (head.headType ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+
+    const isBankAccountEligible =
+      normalizedType === "fixed_expense" ||
+      normalizedType === "investment";
+
+    return isBankAccountEligible
+      ? total + paidAmount
+      : total;
+  }, 0);
+}
+
+export function calculateBankAccountEndingBalance(
+  startingBalance: number | null | undefined,
+  fixedInvestmentAllocation:
+    | number
+    | null
+    | undefined,
+  paidAmount: number | null | undefined
+): number {
+  return (
+    safeAmount(startingBalance) +
+    safeAmount(fixedInvestmentAllocation) -
+    safeAmount(paidAmount)
+  );
+}
+export function calculateBankAccountFromMonthlyHeads(
+  heads: Array<{
+    allocated_amount?: number | null;
+    paid_amount?: number | null;
+    budget_heads?: {
+      head_type?: string | null;
+    } | Array<{
+      head_type?: string | null;
+    }> | null;
+  }>
+) {
+  const calculationHeads = heads.map((head) => {
+    const budgetHead = Array.isArray(
+      head.budget_heads
+    )
+      ? head.budget_heads[0]
+      : head.budget_heads;
+
+    return {
+      amount: Number(
+        head.allocated_amount ?? 0
+      ),
+      paidAmount: Number(
+        head.paid_amount ?? 0
+      ),
+      headType:
+        budgetHead?.head_type ?? "other",
+    };
+  });
+
+  const allocation =
+    calculateBankAccountAllocation(
+      calculationHeads
+    );
+
+  const paid =
+    calculateBankAccountPaidAmount(
+      calculationHeads
+    );
+
+  return {
+    fixedInvestmentAllocation:
+      allocation,
+    paidAmount: paid,
+  };
+}
+
