@@ -1034,3 +1034,672 @@ export async function syncMonthlyCarryForward(
     success: true,
   };
 }
+
+export async function createBudgetHead(
+  name: string,
+  headType: string,
+  allocationValue: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    return {
+      success: false,
+      error: "Budget head name is required.",
+    };
+  }
+
+  if (!headType.trim()) {
+    return {
+      success: false,
+      error: "Budget head type is required.",
+    };
+  }
+
+  const allocation = Number(allocationValue);
+
+  if (!Number.isFinite(allocation)) {
+    return {
+      success: false,
+      error: "Allocation must be a valid number.",
+    };
+  }
+
+  if (allocation < 0) {
+    return {
+      success: false,
+      error: "Allocation cannot be negative.",
+    };
+  }
+
+  const {
+    data: budgetHead,
+    error: budgetHeadError,
+  } = await supabase
+    .from("budget_heads")
+    .insert({
+      user_id: user.id,
+      name: trimmedName,
+      head_type: headType.trim(),
+      default_monthly_allocation: allocation,
+      is_active: true,
+    })
+    .select("id")
+    .single();
+
+  if (budgetHeadError || !budgetHead) {
+    return {
+      success: false,
+      error:
+        budgetHeadError?.message ??
+        "Unable to create budget head.",
+    };
+  }
+
+  const now = new Date();
+
+  const currentMonthStart =
+    `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  const {
+    data: currentBudget,
+    error: currentBudgetError,
+  } = await supabase
+    .from("monthly_budgets")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("month_start", currentMonthStart)
+    .maybeSingle();
+
+  if (currentBudgetError) {
+    await supabase
+      .from("budget_heads")
+      .delete()
+      .eq("id", budgetHead.id)
+      .eq("user_id", user.id);
+
+    return {
+      success: false,
+      error: currentBudgetError.message,
+    };
+  }
+
+  if (currentBudget) {
+    const {
+      error: monthlyHeadError,
+    } = await supabase
+      .from("monthly_budget_heads")
+      .insert({
+        user_id: user.id,
+        monthly_budget_id: currentBudget.id,
+        budget_head_id: budgetHead.id,
+        allocated_amount: allocation,
+        carry_forward: 0,
+        paid_amount: 0,
+      });
+
+    if (monthlyHeadError) {
+      await supabase
+        .from("budget_heads")
+        .delete()
+        .eq("id", budgetHead.id)
+        .eq("user_id", user.id);
+
+      return {
+        success: false,
+        error: monthlyHeadError.message,
+      };
+    }
+  }
+
+  revalidatePath("/customize-budget");
+  revalidatePath("/dashboard");
+  revalidatePath("/home");
+
+  return {
+    success: true,
+    budgetHeadId: budgetHead.id,
+  };
+}
+
+
+export async function updateBudgetHead(
+  budgetHeadId: string,
+  name: string,
+  headType: string,
+  allocationValue: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const trimmedName = name.trim();
+
+  if (!budgetHeadId) {
+    return {
+      success: false,
+      error: "Budget head could not be identified.",
+    };
+  }
+
+  if (!trimmedName) {
+    return {
+      success: false,
+      error: "Budget head name is required.",
+    };
+  }
+
+  if (!headType.trim()) {
+    return {
+      success: false,
+      error: "Budget head type is required.",
+    };
+  }
+
+  const allocation = Number(allocationValue);
+
+  if (!Number.isFinite(allocation)) {
+    return {
+      success: false,
+      error: "Allocation must be a valid number.",
+    };
+  }
+
+  if (allocation < 0) {
+    return {
+      success: false,
+      error: "Allocation cannot be negative.",
+    };
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from("budget_heads")
+    .update({
+      name: trimmedName,
+      head_type: headType.trim(),
+      default_monthly_allocation: allocation,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", budgetHeadId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      error: "Budget head could not be found.",
+    };
+  }
+
+  revalidatePath("/customize-budget");
+  revalidatePath("/dashboard");
+
+  return {
+    success: true,
+  };
+}
+
+
+export async function deactivateBudgetHead(
+  budgetHeadId: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  if (!budgetHeadId) {
+    return {
+      success: false,
+      error: "Budget head could not be identified.",
+    };
+  }
+
+  const {
+    data: budgetHead,
+    error: budgetHeadError,
+  } = await supabase
+    .from("budget_heads")
+    .select("id")
+    .eq("id", budgetHeadId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (budgetHeadError || !budgetHead) {
+    return {
+      success: false,
+      error:
+        budgetHeadError?.message ??
+        "Budget head could not be found.",
+    };
+  }
+
+  /*
+   * Deactivate the reusable budget-head configuration.
+   */
+  const {
+    error: deactivateError,
+  } = await supabase
+    .from("budget_heads")
+    .update({
+      is_active: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", budgetHeadId)
+    .eq("user_id", user.id);
+
+  if (deactivateError) {
+    return {
+      success: false,
+      error: deactivateError.message,
+    };
+  }
+
+  /*
+   * Remove this head from the CURRENT month's dashboard
+   * without touching historical months.
+   */
+  const now = new Date();
+
+  const currentMonthStart =
+    `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  const {
+    data: currentBudget,
+    error: currentBudgetError,
+  } = await supabase
+    .from("monthly_budgets")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("month_start", currentMonthStart)
+    .maybeSingle();
+
+  if (currentBudgetError) {
+    return {
+      success: false,
+      error: currentBudgetError.message,
+    };
+  }
+
+  if (currentBudget) {
+    const {
+      data: currentMonthlyHead,
+      error: currentMonthlyHeadError,
+    } = await supabase
+      .from("monthly_budget_heads")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("monthly_budget_id", currentBudget.id)
+      .eq("budget_head_id", budgetHeadId)
+      .maybeSingle();
+
+    if (currentMonthlyHeadError) {
+      return {
+        success: false,
+        error: currentMonthlyHeadError.message,
+      };
+    }
+
+    if (currentMonthlyHead) {
+      /*
+       * Remove transfers involving this current-month head first.
+       */
+      const { error: transferError } =
+        await supabase
+          .from("transfers")
+          .delete()
+          .eq("user_id", user.id)
+          .eq(
+            "monthly_budget_id",
+            currentBudget.id
+          )
+          .or(
+            `source_monthly_head_id.eq.${currentMonthlyHead.id},destination_monthly_head_id.eq.${currentMonthlyHead.id}`
+          );
+
+      if (transferError) {
+        return {
+          success: false,
+          error: transferError.message,
+        };
+      }
+
+      const { error: deleteMonthlyHeadError } =
+        await supabase
+          .from("monthly_budget_heads")
+          .delete()
+          .eq("id", currentMonthlyHead.id)
+          .eq("user_id", user.id);
+
+      if (deleteMonthlyHeadError) {
+        return {
+          success: false,
+          error: deleteMonthlyHeadError.message,
+        };
+      }
+    }
+  }
+
+  revalidatePath("/customize-budget");
+  revalidatePath("/dashboard");
+
+  return {
+    success: true,
+  };
+}
+
+
+export async function activateBudgetHead(
+  budgetHeadId: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const {
+    data: budgetHead,
+    error: budgetHeadError,
+  } = await supabase
+    .from("budget_heads")
+    .select(
+      "id, default_monthly_allocation"
+    )
+    .eq("id", budgetHeadId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (budgetHeadError || !budgetHead) {
+    return {
+      success: false,
+      error:
+        budgetHeadError?.message ??
+        "Budget head could not be found.",
+    };
+  }
+
+  const {
+    error: activateError,
+  } = await supabase
+    .from("budget_heads")
+    .update({
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", budgetHeadId)
+    .eq("user_id", user.id);
+
+  if (activateError) {
+    return {
+      success: false,
+      error: activateError.message,
+    };
+  }
+
+  /*
+   * Put the head back into the CURRENT month's dashboard.
+   */
+  const now = new Date();
+
+  const currentMonthStart =
+    `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  const {
+    data: currentBudget,
+    error: currentBudgetError,
+  } = await supabase
+    .from("monthly_budgets")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("month_start", currentMonthStart)
+    .maybeSingle();
+
+  if (currentBudgetError) {
+    return {
+      success: false,
+      error: currentBudgetError.message,
+    };
+  }
+
+  if (currentBudget) {
+    const {
+      data: existingMonthlyHead,
+      error: existingMonthlyHeadError,
+    } = await supabase
+      .from("monthly_budget_heads")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("monthly_budget_id", currentBudget.id)
+      .eq("budget_head_id", budgetHeadId)
+      .maybeSingle();
+
+    if (existingMonthlyHeadError) {
+      return {
+        success: false,
+        error:
+          existingMonthlyHeadError.message,
+      };
+    }
+
+    if (!existingMonthlyHead) {
+      const {
+        error: insertError,
+      } = await supabase
+        .from("monthly_budget_heads")
+        .insert({
+          user_id: user.id,
+          monthly_budget_id: currentBudget.id,
+          budget_head_id: budgetHeadId,
+          allocated_amount:
+            budgetHead.default_monthly_allocation,
+          carry_forward: 0,
+          paid_amount: 0,
+        });
+
+      if (insertError) {
+        return {
+          success: false,
+          error: insertError.message,
+        };
+      }
+    }
+  }
+
+  revalidatePath("/customize-budget");
+  revalidatePath("/dashboard");
+
+  return {
+    success: true,
+  };
+}
+
+
+export async function deleteBudgetHead(
+  budgetHeadId: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  if (!budgetHeadId) {
+    return {
+      success: false,
+      error: "Budget head could not be identified.",
+    };
+  }
+
+  const {
+    data: budgetHead,
+    error: budgetHeadError,
+  } = await supabase
+    .from("budget_heads")
+    .select("id")
+    .eq("id", budgetHeadId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (budgetHeadError || !budgetHead) {
+    return {
+      success: false,
+      error:
+        budgetHeadError?.message ??
+        "Budget head could not be found.",
+    };
+  }
+
+  /*
+   * Find every monthly snapshot using this budget head.
+   */
+  const {
+    data: monthlyHeads,
+    error: monthlyHeadsError,
+  } = await supabase
+    .from("monthly_budget_heads")
+    .select(
+      "id, monthly_budget_id"
+    )
+    .eq("user_id", user.id)
+    .eq("budget_head_id", budgetHeadId);
+
+  if (monthlyHeadsError) {
+    return {
+      success: false,
+      error: monthlyHeadsError.message,
+    };
+  }
+
+  const monthlyHeadIds =
+    (monthlyHeads ?? []).map(
+      (head) => head.id
+    );
+
+  /*
+   * Delete transfers involving those monthly snapshots.
+   */
+  if (monthlyHeadIds.length > 0) {
+    const {
+      error: transferError,
+    } = await supabase
+      .from("transfers")
+      .delete()
+      .eq("user_id", user.id)
+      .or(
+        `source_monthly_head_id.in.(${monthlyHeadIds.join(",")}),destination_monthly_head_id.in.(${monthlyHeadIds.join(",")})`
+      );
+
+    if (transferError) {
+      return {
+        success: false,
+        error: transferError.message,
+      };
+    }
+
+    /*
+     * Delete the monthly snapshots.
+     */
+    const {
+      error: monthlyDeleteError,
+    } = await supabase
+      .from("monthly_budget_heads")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("budget_head_id", budgetHeadId);
+
+    if (monthlyDeleteError) {
+      return {
+        success: false,
+        error: monthlyDeleteError.message,
+      };
+    }
+  }
+
+  /*
+   * Finally delete the reusable budget-head record.
+   */
+  const {
+    error: deleteError,
+  } = await supabase
+    .from("budget_heads")
+    .delete()
+    .eq("id", budgetHeadId)
+    .eq("user_id", user.id);
+
+  if (deleteError) {
+    return {
+      success: false,
+      error: deleteError.message,
+    };
+  }
+
+  revalidatePath("/customize-budget");
+  revalidatePath("/dashboard");
+  revalidatePath("/home");
+
+  return {
+    success: true,
+  };
+}

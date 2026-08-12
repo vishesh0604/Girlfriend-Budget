@@ -19,11 +19,14 @@ export default async function HomePage() {
     <main className="min-h-screen bg-[#e5f6ff] px-4 py-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-4xl items-center justify-center">
         <div className="w-full">
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
-              Budget Tracker
-            </h1>
+            <div className="mb-8 text-center">
+            <p className="mb-2 text-sm font-medium tracking-wide text-[#647086]">
+            Built by Vishesh, for Tanishka 💙 
+            </p>
 
+            <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
+                Budget Tracker
+            </h1>
             <p className="mt-2 text-[#647086]">
               What would you like to do?
             </p>
