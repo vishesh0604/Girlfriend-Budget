@@ -15,6 +15,7 @@ import { initializeMonthlyBudget } from "./actions";
 import SalaryEditor from "./SalaryEditor";
 import BudgetHeadEditor from "./BudgetHeadEditor";
 import MonthNavigator from "./MonthNavigator";
+import PushRemainingButton from "./PushRemainingButton";
 
 type DashboardPageProps = {
   searchParams: Promise<{
@@ -536,19 +537,28 @@ export default async function DashboardPage({
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-zinc-50 px-5 py-8 text-zinc-950 sm:px-8">
-      <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-5xl">
+        <div className="mb-4 flex items-center justify-between gap-4">
         <Link
-        href="/home"
-        className="mb-4 inline-flex items-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-100"
+            href="/home"
+            className="inline-flex items-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-100"
         >
-        ← Home
-        </Link>            
-        <MonthNavigator
-          monthStart={
-            monthlyBudget.month_start
-          }
-        />
+            ← Home
+        </Link>
 
+        <PushRemainingButton
+            monthlyBudgetId={monthlyBudget.id}
+            heads={headStates.map((head) => ({
+            id: head.id,
+            name: head.name,
+            remaining: head.state.finalBalance,
+            }))}
+        />
+        </div>
+
+        <MonthNavigator
+        monthStart={monthlyBudget.month_start}
+        />
         <section className="space-y-4">
           {/* Primary summary */}
           <div className="grid gap-4 sm:grid-cols-3">

@@ -671,6 +671,189 @@ Final result:
 
 ---
 
+# Carry-Forward Redesign — Build Plan
+
+## Objective
+
+Replace the current automatic carry-forward system with a manual,
+one-month-only push system.
+
+The user should have explicit control over when remaining money from a
+budget head is transferred to the next month.
+
+---
+
+# CF-1 — Understand Current Carry-Forward Code
+
+Inspect the existing carry-forward implementation.
+
+Identify:
+
+- Where previous-month balances are calculated.
+- Where `carry_forward` is created.
+- Where it is automatically transferred into a new month.
+- How `allocated_amount`, `paid_amount`, and `carry_forward` interact.
+- How transfers affect the current calculation.
+- Whether carry-forward can currently cascade across multiple months.
+- Which existing functions must be changed.
+- Which existing functionality must remain untouched.
+
+No code changes should be made until the current system is fully understood.
+
+---
+
+# CF-2 — Remove Automatic Propagation
+
+Change the monthly initialization system so that:
+
+- New months receive their normal budget-head allocation.
+- New months start with `carry_forward = 0`.
+- Previous-month remaining balances are NOT automatically transferred.
+- Historical months remain unchanged.
+- Current-month allocations remain unchanged.
+- Future-month allocations remain unchanged.
+- Existing transfer functionality remains separate.
+
+Carry-forward will only occur when the user explicitly presses the
+Push button.
+
+---
+
+# CF-3 — Build Manual Push Action
+
+Create a server action for manually pushing a budget head's remaining
+amount to the immediately following month.
+
+Rules:
+
+- Only the selected budget head is pushed.
+- Only the current month's remaining amount is pushed.
+- The push affects exactly one month.
+- It cannot automatically continue into later months.
+- The next month's existing allocation remains intact.
+- The pushed amount becomes carry-forward in the next month.
+- The original month's allocation and payment history are not changed.
+- Zero remaining balance cannot be pushed.
+- The same amount must not be pushed twice accidentally.
+
+Example:
+
+August:
+
+Allocated: ₹1,666
+Paid: ₹1,000
+Remaining: ₹666
+
+Push → September:
+
+September allocation: ₹1,666
+September carry-forward: ₹666
+
+September available amount: ₹2,332
+
+The ₹666 must NOT automatically continue to October.
+
+---
+
+# CF-4 — Add Dashboard Push Button
+
+Add a visible Push Remaining button to the Dashboard.
+
+The button should:
+
+- Clearly indicate that it pushes the remaining amount.
+- Push only to the immediately next month.
+- Be disabled or unavailable when remaining amount is zero.
+- Prevent accidental duplicate pushes.
+- Provide clear success/error feedback.
+- Not interfere with existing Edit, Activate, Deactivate, Delete,
+  Transfer, or payment functionality.
+
+---
+
+# CF-5 — Carry-Forward Testing
+
+Test all important cases.
+
+### Test A — Zero Remaining
+
+Allocated: ₹1,666
+Paid: ₹1,666
+Remaining: ₹0
+
+Push should do nothing.
+
+### Test B — Partial Remaining
+
+Allocated: ₹1,666
+Paid: ₹1,000
+Remaining: ₹666
+
+Push should transfer exactly ₹666 to the next month.
+
+### Test C — Completely Unpaid
+
+Allocated: ₹1,666
+Paid: ₹0
+Remaining: ₹1,666
+
+Push should transfer exactly ₹1,666.
+
+### Test D — Multiple Heads
+
+Push one head.
+
+Verify that other heads are unaffected.
+
+### Test E — Duplicate Push
+
+Press Push twice.
+
+Verify that the same remaining amount is not duplicated.
+
+### Test F — One-Month Limit
+
+August → September
+
+Verify that nothing automatically reaches October.
+
+### Test G — Manual Second Push
+
+September → October
+
+If September has remaining money, the user can manually push it
+again.
+
+### Test H — Historical Months
+
+Verify that historical months are not modified automatically.
+
+### Test I — Future Months
+
+Verify that future months receive their normal allocations without
+automatic carry-forward.
+
+### Test J — Existing Transfers
+
+Verify that the new carry-forward system does not break the existing
+budget-head transfer system.
+
+---
+
+# Completion Criteria
+
+The redesign is complete only when:
+
+- Automatic carry-forward is removed.
+- Manual push works.
+- Push affects only the next month.
+- Carry-forward cannot accidentally cascade.
+- Duplicate pushes are prevented.
+- Historical months remain protected.
+- Existing budget-head functionality remains intact.
+- Existing transfers remain intact.
+- All CF-5 tests pass.
+
 # Current Progress
 
 ## Bank Account Tracker

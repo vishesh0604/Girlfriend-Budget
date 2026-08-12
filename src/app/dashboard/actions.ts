@@ -203,120 +203,6 @@ export async function initializeMonthlyBudget(
     };
   }
 
-  const previousMonthStart =
-    getPreviousMonthStart(monthStart);
-
-  const {
-    data: previousBudget,
-    error: previousBudgetError,
-  } = await supabase
-    .from("monthly_budgets")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq(
-      "month_start",
-      previousMonthStart
-    )
-    .maybeSingle();
-
-  if (previousBudgetError) {
-    return {
-      success: false,
-      error:
-        previousBudgetError.message,
-    };
-  }
-
-  const carryForwardByHeadId =
-    new Map<string, number>();
-
-  if (previousBudget) {
-    const {
-      data: previousHeads,
-      error: previousHeadsError,
-    } = await supabase
-      .from("monthly_budget_heads")
-      .select(
-        "id, budget_head_id, allocated_amount, carry_forward, paid_amount"
-      )
-      .eq("user_id", user.id)
-      .eq(
-        "monthly_budget_id",
-        previousBudget.id
-      );
-
-    if (previousHeadsError) {
-      return {
-        success: false,
-        error:
-          previousHeadsError.message,
-      };
-    }
-
-    const {
-      data: previousTransfers,
-      error: previousTransfersError,
-    } = await supabase
-      .from("transfers")
-      .select(
-        "source_monthly_head_id, destination_monthly_head_id, amount"
-      )
-      .eq("user_id", user.id)
-      .eq(
-        "monthly_budget_id",
-        previousBudget.id
-      );
-
-    if (previousTransfersError) {
-      return {
-        success: false,
-        error:
-          previousTransfersError.message,
-      };
-    }
-
-    const transferRecords: TransferRecord[] =
-      (previousTransfers ?? []).map(
-        (transfer) => ({
-          sourceHeadId:
-            transfer.source_monthly_head_id,
-          destinationHeadId:
-            transfer.destination_monthly_head_id,
-          amount: Number(
-            transfer.amount
-          ),
-        })
-      );
-
-    for (const previousHead of
-      previousHeads ?? []) {
-      const state =
-        calculateHeadState(
-          {
-            id: previousHead.id,
-            allocatedAmount:
-              Number(
-                previousHead.allocated_amount
-              ),
-            carryForward:
-              Number(
-                previousHead.carry_forward
-              ),
-            paidAmount:
-              Number(
-                previousHead.paid_amount
-              ),
-          },
-          transferRecords
-        );
-
-      carryForwardByHeadId.set(
-        previousHead.budget_head_id,
-        state.finalBalance
-      );
-    }
-  }
-
   const initialSalary = 31500;
 
   const {
@@ -352,10 +238,7 @@ export async function initializeMonthlyBudget(
       budget_head_id: head.id,
       allocated_amount:
         head.default_monthly_allocation,
-      carry_forward:
-        carryForwardByHeadId.get(
-          head.id
-        ) ?? 0,
+      carry_forward:0,
       paid_amount: 0,
     }));
 
@@ -894,6 +777,472 @@ export async function undoTransfer(
 
   return {
     success: true,
+  };
+}
+
+export async function pushRemainingToNextMonth(
+  monthlyBudgetId: string,
+  monthlyHeadId: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  // Get the current monthly budget.
+  const {
+    data: currentBudget,
+    error: currentBudgetError,
+  } = await supabase
+    .from("monthly_budgets")
+    .select("id, month_start")
+    .eq("id", monthlyBudgetId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (currentBudgetError || !currentBudget) {
+    return {
+      success: false,
+      error:
+        currentBudgetError?.message ??
+        "Current monthly budget could not be found.",
+    };
+  }
+
+  // Get the current monthly head.
+  const {
+    data: currentHead,
+    error: currentHeadError,
+  } = await supabase
+    .from("monthly_budget_heads")
+    .select(
+      "id, budget_head_id, allocated_amount, carry_forward, paid_amount"
+    )
+    .eq("id", monthlyHeadId)
+    .eq("user_id", user.id)
+    .eq("monthly_budget_id", currentBudget.id)
+    .single();
+
+  if (currentHeadError || !currentHead) {
+    return {
+      success: false,
+      error:
+        currentHeadError?.message ??
+        "Current budget head could not be found.",
+    };
+  }
+
+  // Load transfers for the current month so that
+  // "remaining" matches the Dashboard calculation.
+  const {
+    data: transfers,
+    error: transfersError,
+  } = await supabase
+    .from("transfers")
+    .select(
+      "source_monthly_head_id, destination_monthly_head_id, amount"
+    )
+    .eq("user_id", user.id)
+    .eq("monthly_budget_id", currentBudget.id);
+
+  if (transfersError) {
+    return {
+      success: false,
+      error: transfersError.message,
+    };
+  }
+
+  const transferRecords: TransferRecord[] =
+    (transfers ?? []).map((transfer) => ({
+      sourceHeadId:
+        transfer.source_monthly_head_id,
+      destinationHeadId:
+        transfer.destination_monthly_head_id,
+      amount: Number(transfer.amount),
+    }));
+
+  // Calculate the CURRENT actual remaining balance,
+  // including carry-forward and transfers.
+  const currentState = calculateHeadState(
+    {
+      id: currentHead.id,
+      allocatedAmount:
+        Number(currentHead.allocated_amount),
+      carryForward:
+        Number(currentHead.carry_forward),
+      paidAmount:
+        Number(currentHead.paid_amount),
+    },
+    transferRecords
+  );
+
+  const remaining = currentState.finalBalance;
+
+  // Calculate the immediately following month.
+  const [year, month] =
+    currentBudget.month_start
+      .split("-")
+      .map(Number);
+
+  const nextDate = new Date(
+    Date.UTC(year, month - 1, 1)
+  );
+
+  nextDate.setUTCMonth(
+    nextDate.getUTCMonth() + 1
+  );
+
+  const nextMonthStart =
+    `${nextDate.getUTCFullYear()}-${String(
+      nextDate.getUTCMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  // Make sure the NEXT month exists.
+  const initializeResult =
+    await initializeMonthlyBudget(
+      nextMonthStart
+    );
+
+  if (!initializeResult.success) {
+    return {
+      success: false,
+      error:
+        initializeResult.error ??
+        "Unable to initialize the next month.",
+    };
+  }
+
+  // Get the next month's corresponding budget head.
+  const {
+    data: nextHead,
+    error: nextHeadError,
+  } = await supabase
+    .from("monthly_budget_heads")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq(
+      "monthly_budget_id",
+      initializeResult.budgetId
+    )
+    .eq(
+      "budget_head_id",
+      currentHead.budget_head_id
+    )
+    .maybeSingle();
+
+  if (nextHeadError || !nextHead) {
+    return {
+      success: false,
+      error:
+        nextHeadError?.message ??
+        "This budget head does not exist in the next month.",
+    };
+  }
+
+  // OVERWRITE the next month's carry-forward.
+  // We intentionally do NOT add to the existing value.
+  const { error: updateError } =
+    await supabase
+      .from("monthly_budget_heads")
+      .update({
+        carry_forward: Math.max(
+          0,
+          remaining
+        ),
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq("id", nextHead.id)
+      .eq("user_id", user.id);
+
+  if (updateError) {
+    return {
+      success: false,
+      error: updateError.message,
+    };
+  }
+
+  revalidatePath("/dashboard");
+
+  return {
+    success: true,
+    pushedAmount: Math.max(
+      0,
+      remaining
+    ),
+    nextMonthStart,
+  };
+}
+
+export async function reversePushToNextMonth(
+  monthlyBudgetId: string,
+  monthlyHeadId: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  // Get the current monthly budget.
+  const {
+    data: currentBudget,
+    error: currentBudgetError,
+  } = await supabase
+    .from("monthly_budgets")
+    .select("id, month_start")
+    .eq("id", monthlyBudgetId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (currentBudgetError || !currentBudget) {
+    return {
+      success: false,
+      error:
+        currentBudgetError?.message ??
+        "Current monthly budget could not be found.",
+    };
+  }
+
+  // Get the current monthly head.
+  const {
+    data: currentHead,
+    error: currentHeadError,
+  } = await supabase
+    .from("monthly_budget_heads")
+    .select("id, budget_head_id")
+    .eq("id", monthlyHeadId)
+    .eq("user_id", user.id)
+    .eq("monthly_budget_id", currentBudget.id)
+    .single();
+
+  if (currentHeadError || !currentHead) {
+    return {
+      success: false,
+      error:
+        currentHeadError?.message ??
+        "Current budget head could not be found.",
+    };
+  }
+
+  // Calculate the immediately next month.
+  const [year, month] =
+    currentBudget.month_start
+      .split("-")
+      .map(Number);
+
+  const nextDate = new Date(
+    Date.UTC(year, month - 1, 1)
+  );
+
+  nextDate.setUTCMonth(
+    nextDate.getUTCMonth() + 1
+  );
+
+  const nextMonthStart =
+    `${nextDate.getUTCFullYear()}-${String(
+      nextDate.getUTCMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  // Find the next month's budget.
+  const {
+    data: nextBudget,
+    error: nextBudgetError,
+  } = await supabase
+    .from("monthly_budgets")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("month_start", nextMonthStart)
+    .maybeSingle();
+
+  if (nextBudgetError) {
+    return {
+      success: false,
+      error: nextBudgetError.message,
+    };
+  }
+
+  if (!nextBudget) {
+    return {
+      success: false,
+      error:
+        "The next month's budget does not exist.",
+    };
+  }
+
+  // Find the corresponding head in the next month.
+  const {
+    data: nextHead,
+    error: nextHeadError,
+  } = await supabase
+    .from("monthly_budget_heads")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("monthly_budget_id", nextBudget.id)
+    .eq(
+      "budget_head_id",
+      currentHead.budget_head_id
+    )
+    .maybeSingle();
+
+  if (nextHeadError || !nextHead) {
+    return {
+      success: false,
+      error:
+        nextHeadError?.message ??
+        "This budget head does not exist in the next month.",
+    };
+  }
+
+  // Reverse the push by restoring the next month's
+  // carry-forward to its default state.
+  const { error: updateError } =
+    await supabase
+      .from("monthly_budget_heads")
+      .update({
+        carry_forward: 0,
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq("id", nextHead.id)
+      .eq("user_id", user.id);
+
+  if (updateError) {
+    return {
+      success: false,
+      error: updateError.message,
+    };
+  }
+
+  revalidatePath("/dashboard");
+
+  return {
+    success: true,
+    nextMonthStart,
+  };
+}
+
+export async function reverseAllPushesToNextMonth(
+  monthlyBudgetId: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  // Get the current monthly budget.
+  const {
+    data: currentBudget,
+    error: currentBudgetError,
+  } = await supabase
+    .from("monthly_budgets")
+    .select("id, month_start")
+    .eq("id", monthlyBudgetId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (currentBudgetError || !currentBudget) {
+    return {
+      success: false,
+      error:
+        currentBudgetError?.message ??
+        "Current monthly budget could not be found.",
+    };
+  }
+
+  // Calculate the immediately next month.
+  const [year, month] =
+    currentBudget.month_start
+      .split("-")
+      .map(Number);
+
+  const nextDate = new Date(
+    Date.UTC(year, month - 1, 1)
+  );
+
+  nextDate.setUTCMonth(
+    nextDate.getUTCMonth() + 1
+  );
+
+  const nextMonthStart =
+    `${nextDate.getUTCFullYear()}-${String(
+      nextDate.getUTCMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  // Find the next month's budget.
+  const {
+    data: nextBudget,
+    error: nextBudgetError,
+  } = await supabase
+    .from("monthly_budgets")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("month_start", nextMonthStart)
+    .maybeSingle();
+
+  if (nextBudgetError) {
+    return {
+      success: false,
+      error: nextBudgetError.message,
+    };
+  }
+
+  if (!nextBudget) {
+    return {
+      success: false,
+      error:
+        "The next month's budget does not exist.",
+    };
+  }
+
+  // Reset ALL carry-forward values in the
+  // immediately next month for this user.
+  const { error: updateError } =
+    await supabase
+      .from("monthly_budget_heads")
+      .update({
+        carry_forward: 0,
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq("user_id", user.id)
+      .eq("monthly_budget_id", nextBudget.id);
+
+  if (updateError) {
+    return {
+      success: false,
+      error: updateError.message,
+    };
+  }
+
+  revalidatePath("/dashboard");
+
+  return {
+    success: true,
+    nextMonthStart,
   };
 }
 
