@@ -60,13 +60,118 @@ export async function initializeMonthlyBudget(
   }
 
   if (existingBudget) {
+    /*
+    * If this is a FUTURE month, synchronize any newly
+    * created active budget heads into that month.
+    *
+    * Historical and current months are left untouched.
+    */
+    const now = new Date();
+
+    const currentMonthStart =
+      `${now.getFullYear()}-${String(
+        now.getMonth() + 1
+      ).padStart(2, "0")}-01`;
+
+    if (monthStart > currentMonthStart) {
+      const {
+        data: activeBudgetHeads,
+        error: activeHeadsError,
+      } = await supabase
+        .from("budget_heads")
+        .select(
+          "id, default_monthly_allocation"
+        )
+        .eq("user_id", user.id)
+        .eq("is_active", true);
+
+      if (activeHeadsError) {
+        return {
+          success: false,
+          error: activeHeadsError.message,
+        };
+      }
+
+      const {
+        data: existingMonthlyHeads,
+        error: existingMonthlyHeadsError,
+      } = await supabase
+        .from("monthly_budget_heads")
+        .select("budget_head_id")
+        .eq("user_id", user.id)
+        .eq(
+          "monthly_budget_id",
+          existingBudget.id
+        );
+
+      if (existingMonthlyHeadsError) {
+        return {
+          success: false,
+          error:
+            existingMonthlyHeadsError.message,
+        };
+      }
+
+      const existingHeadIds = new Set(
+        (existingMonthlyHeads ?? []).map(
+          (head) => head.budget_head_id
+        )
+      );
+
+      const missingHeads =
+        (activeBudgetHeads ?? [])
+          .filter(
+            (head) =>
+              !existingHeadIds.has(head.id)
+          )
+          .map((head) => ({
+            user_id: user.id,
+            monthly_budget_id:
+              existingBudget.id,
+            budget_head_id: head.id,
+            allocated_amount:
+              head.default_monthly_allocation,
+            carry_forward: 0,
+            paid_amount: 0,
+          }));
+
+      if (missingHeads.length > 0) {
+        const {
+          error: insertMissingHeadsError,
+        } = await supabase
+          .from("monthly_budget_heads")
+          .insert(missingHeads);
+
+        if (insertMissingHeadsError) {
+          return {
+            success: false,
+            error:
+              insertMissingHeadsError.message,
+          };
+        }
+      }
+    }
+
     return {
       success: true,
       alreadyExists: true,
       budgetId: existingBudget.id,
     };
   }
+  const now = new Date();
 
+  const currentMonthStart =
+    `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  if (monthStart < currentMonthStart) {
+    return {
+      success: false,
+      error:
+        "Past months cannot be initialized automatically.",
+    };
+  }
   const {
     data: budgetHeads,
     error: budgetHeadsError,

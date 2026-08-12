@@ -133,7 +133,45 @@ export default async function DashboardPage({
         );
       }
 
-      monthlyBudget = refreshed.data;
+            monthlyBudget = refreshed.data;
+    } else if (
+    requestedMonth > getCurrentMonthStart()
+    ) {
+    const result =
+        await initializeMonthlyBudget(
+        requestedMonth
+        );
+
+    if (!result.success) {
+        throw new Error(
+        result.error ??
+            "Unable to synchronize future month."
+        );
+    }
+
+    const refreshed = await supabase
+        .from("monthly_budgets")
+        .select(
+        "id, month_start, salary"
+        )
+        .eq("user_id", user.id)
+        .eq(
+        "month_start",
+        requestedMonth
+        )
+        .single();
+
+    if (
+        refreshed.error ||
+        !refreshed.data
+    ) {
+        throw new Error(
+        refreshed.error?.message ??
+            "Monthly budget could not be loaded."
+        );
+    }
+
+    monthlyBudget = refreshed.data;
     }
   } else {
     /*
