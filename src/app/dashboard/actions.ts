@@ -193,17 +193,7 @@ export async function initializeMonthlyBudget(
     };
   }
 
-  if (
-    !budgetHeads ||
-    budgetHeads.length === 0
-  ) {
-    return {
-      success: false,
-      error: "No active budget heads exist.",
-    };
-  }
-
-  const initialSalary = 31500;
+  const initialSalary = 0;
 
   const {
     data: monthlyBudget,
@@ -242,12 +232,15 @@ export async function initializeMonthlyBudget(
       paid_amount: 0,
     }));
 
-  const {
-    error: monthlyHeadsError,
-  } = await supabase
-    .from("monthly_budget_heads")
-    .insert(monthlyHeadRows);
+  let monthlyHeadsError = null;
 
+  if (monthlyHeadRows.length > 0) {
+    const result = await supabase
+      .from("monthly_budget_heads")
+      .insert(monthlyHeadRows);
+
+    monthlyHeadsError = result.error;
+  }
   if (monthlyHeadsError) {
     await supabase
       .from("monthly_budgets")
