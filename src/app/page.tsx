@@ -33,7 +33,7 @@ export default function HomePage() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push("/home");
     router.refresh();
   }
 

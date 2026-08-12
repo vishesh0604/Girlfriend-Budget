@@ -159,6 +159,68 @@ Stores individual transfers between budget heads.
 ## Currently Working On
 Preparing the application for Step 14: mobile UI.
 
+## Budget Configuration & Navigation — Implementation Plan
+
+### Step 1 — Home Page + Navigation
+- Create authenticated Home page
+- After login, route user to Home
+- Provide Dashboard option
+- Provide Customize Budget option
+- Provide Logout option
+- Allow Dashboard → Home
+- Allow Customize Budget → Home
+
+### Step 2 — Budget-Head CRUD Server Actions
+- Add budget head
+- Edit budget head name
+- Edit budget head type
+- Edit default monthly allocation
+- Deactivate budget head
+- Preserve historical records
+
+### Step 3 — Customize Budget UI
+- Create dedicated Customize Budget page
+- Display all active budget heads
+- Add "+ Add Budget Head"
+- Add Edit controls
+- Add Deactivate controls
+- Support mobile layout
+
+### Step 4 — Connect New Heads to Future Monthly Budgets
+- New active heads appear in future months
+- Updated allocations apply to future months
+- Deactivated heads do not appear in newly created months
+- Existing monthly records remain unchanged
+
+### Step 5 — Verify Historical Months Aren't Altered
+- Test allocation changes
+- Test name changes
+- Test type changes
+- Test deactivation
+- Test newly added heads
+- Confirm historical monthly snapshots remain intact
+
+### Step 6 — Logout + Navigation Testing
+- Test login → Home
+- Test Home → Dashboard
+- Test Home → Customize Budget
+- Test Dashboard → Home
+- Test Customize Budget → Home
+- Test Logout → Login
+- Test protected routes while logged out
+
+### Step 7 — Production Build
+- Run `npm run build`
+- Fix all TypeScript/build errors
+- Confirm production build succeeds
+
+### Step 8 — Update Project Documentation
+- Update CURRENT_STATE.md
+- Update project checklist
+- Record completed functionality
+- Record remaining issues
+- Confirm implementation status
+
 ## Next Task
 
 1. Configure Supabase authentication. 🟢
@@ -176,7 +238,7 @@ Preparing the application for Step 14: mobile UI.
 13. Build monthly navigation. 🟢
 14. Build mobile UI. 🟢
 15. Run mandatory functional test cases from PROJECT_SPEC.md. 🟢
-16. Deploy.
+16. Deploy. 🟢
 
 ## Known Issues
 

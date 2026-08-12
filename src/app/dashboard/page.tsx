@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
@@ -498,7 +499,12 @@ export default async function DashboardPage({
   return (
     <main className="min-h-screen overflow-x-hidden bg-zinc-50 px-5 py-8 text-zinc-950 sm:px-8">
       <div className="mx-auto max-w-5xl">
-
+        <Link
+        href="/home"
+        className="mb-4 inline-flex items-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-100"
+        >
+        ← Home
+        </Link>            
         <MonthNavigator
           monthStart={
             monthlyBudget.month_start
