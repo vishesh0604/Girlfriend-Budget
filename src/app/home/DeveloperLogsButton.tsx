@@ -5,6 +5,15 @@ import { useState } from "react";
 export default function DeveloperLogsButton() {
   const [open, setOpen] = useState(false);
 
+  const changes = [
+    "Added all five contextual Help buttons '(?)' with shared popup behavior and location-specific descriptions.",
+    "Added Developer Logs with a dedicated popup for tracking recent development changes.",
+    "Added Current Account Balance with a budget-head-level balance breakdown.",
+    "Added the login page's decorative background design to home page.",
+    "Added internal scrolling for long popups.",
+    
+  ];
+
   return (
     <>
       <button
@@ -31,88 +40,42 @@ export default function DeveloperLogsButton() {
               </h2>
 
               <p className="mt-1 text-sm leading-6 text-[#647086]">
-                A record of the latest changes and improvements
-                made to the Budget Tracker.
+                A record of the latest changes and improvements made to the
+                Budget Tracker.
               </p>
 
-              <div className="mt-5 space-y-5">
-                <div>
-                  <p className="font-semibold text-[#26354d]">
-                    Current Account Balance
-                  </p>
-                  <p className="mt-1">
-                    Added the Current Account Balance card to the
-                    Dashboard. It calculates the total of all
-                    remaining budget-head balances and updates
-                    whenever the underlying budget changes.
-                  </p>
-                </div>
+              <div className="mt-5 overflow-hidden rounded-2xl border border-[#e6b7c9] bg-[#ffe7ef] shadow-sm">
+                <div className="flex">
+                  <div className="w-1.5 shrink-0 bg-[#8b63a8]" />
 
-                <div>
-                  <p className="font-semibold text-[#26354d]">
-                    Current Account Balance Breakdown
-                  </p>
-                  <p className="mt-1">
-                    The card now shows individual budget heads
-                    with their remaining balances while excluding
-                    heads with a zero balance.
-                  </p>
-                </div>
+                  <div className="min-w-0 flex-1 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-[#26354d]">
+                          Budget Tracker Development
+                        </p>
 
-                <div>
-                  <p className="font-semibold text-[#26354d]">
-                    Help System
-                  </p>
-                  <p className="mt-1">
-                    Added contextual question-mark help buttons
-                    across the platform, including Home, Dashboard,
-                    Customize Budget, Push Remaining Amount, and
-                    Current Account Balance.
-                  </p>
-                </div>
+                        <p className="mt-1 text-xs text-[#647086]">
+                          13 August 2026
+                        </p>
+                      </div>
 
-                <div>
-                  <p className="font-semibold text-[#26354d]">
-                    Help Popup Improvements
-                  </p>
-                  <p className="mt-1">
-                    Standardized the help-popup theme, typography,
-                    interaction, click-outside behavior, and
-                    internal scrolling for longer content.
-                  </p>
-                </div>
+                      <span className="shrink-0 text-xs text-[#647086]">
+                        02:34 AM
+                      </span>
+                    </div>
 
-                <div>
-                  <p className="font-semibold text-[#26354d]">
-                    Push Remaining Popup
-                  </p>
-                  <p className="mt-1">
-                    Improved the Push Remaining popup so larger
-                    numbers of budget heads can be viewed using
-                    internal scrolling while keeping the popup
-                    compact when possible.
-                  </p>
-                </div>
-
-                <div>
-                  <p className="font-semibold text-[#26354d]">
-                    Homepage Design
-                  </p>
-                  <p className="mt-1">
-                    Added the decorative pastel background treatment
-                    used on the login page to the homepage.
-                  </p>
-                </div>
-
-                <div>
-                  <p className="font-semibold text-[#26354d]">
-                    Developer Logs
-                  </p>
-                  <p className="mt-1">
-                    Added this Developer Logs section so future
-                    development changes can be recorded and viewed
-                    directly from the platform.
-                  </p>
+                    <div className="mt-4 space-y-2.5">
+                      {changes.map((change, index) => (
+                        <p
+                          key={index}
+                          className="text-sm leading-6 text-[#26354d]"
+                        >
+                          • {change}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
