@@ -21,7 +21,7 @@ export default function DeveloperLogsButton() {
         onClick={() => setOpen(true)}
         className="inline-flex items-center rounded-xl border border-[#d8c7e8] bg-[#eee4f7] px-4 py-2 text-sm font-medium text-[#76558f] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#e4d5f1] hover:shadow-md"
       >
-        Developer Logs
+        Developer Logs 
       </button>
 
       {open && (
@@ -36,7 +36,7 @@ export default function DeveloperLogsButton() {
           <div className="w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-hidden rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] shadow-xl">
             <div className="help-popup-scrollbar max-h-[calc(100vh-3rem)] overflow-y-auto overscroll-contain p-6 pr-5">
               <h2 className="text-lg font-semibold tracking-tight text-[#26354d]">
-                Developer Logs
+                Developer Logs (Vishesh)
               </h2>
 
               <p className="mt-1 text-sm leading-6 text-[#647086]">
