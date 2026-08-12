@@ -160,18 +160,7 @@ export async function initializeMonthlyBudget(
   }
   const now = new Date();
 
-  const currentMonthStart =
-    `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}-01`;
-
-  if (monthStart < currentMonthStart) {
-    return {
-      success: false,
-      error:
-        "Past months cannot be initialized automatically.",
-    };
-  }
+  
   const {
     data: budgetHeads,
     error: budgetHeadsError,

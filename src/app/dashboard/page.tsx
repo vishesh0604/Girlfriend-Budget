@@ -95,49 +95,49 @@ export default async function DashboardPage({
 
     monthlyBudget = requestedBudget;
 
-    /*
-     * Navigating to a month that does not exist yet
-     * automatically initializes that month.
-     */
     if (!monthlyBudget) {
-      const result =
-        await initializeMonthlyBudget(
-          requestedMonth
-        );
-
-      if (!result.success) {
-        throw new Error(
-          result.error ??
-            "Unable to initialize monthly budget."
-        );
-      }
-
-      const refreshed = await supabase
-        .from("monthly_budgets")
-        .select(
-          "id, month_start, salary"
-        )
-        .eq("user_id", user.id)
-        .eq(
-          "month_start",
-          requestedMonth
-        )
-        .single();
-
       if (
-        refreshed.error ||
-        !refreshed.data
+        requestedMonth >
+        getCurrentMonthStart()
       ) {
-        throw new Error(
-          refreshed.error?.message ??
-            "Monthly budget could not be loaded."
-        );
-      }
+        const result =
+          await initializeMonthlyBudget(
+            requestedMonth
+          );
 
-            monthlyBudget = refreshed.data;
-    } else if (
-    requestedMonth > getCurrentMonthStart()
-    ) {
+        if (!result.success) {
+          throw new Error(
+            result.error ??
+              "Unable to synchronize future month."
+          );
+        }
+
+        const refreshed =
+          await supabase
+            .from("monthly_budgets")
+            .select(
+              "id, month_start, salary"
+            )
+            .eq("user_id", user.id)
+            .eq(
+              "month_start",
+              requestedMonth
+            )
+            .single();
+
+        if (
+          refreshed.error ||
+          !refreshed.data
+        ) {
+          throw new Error(
+            refreshed.error?.message ??
+              "Monthly budget could not be loaded."
+          );
+        }
+
+        monthlyBudget =
+          refreshed.data;
+    } else {
     const result =
         await initializeMonthlyBudget(
         requestedMonth
@@ -146,19 +146,20 @@ export default async function DashboardPage({
     if (!result.success) {
         throw new Error(
         result.error ??
-            "Unable to synchronize future month."
+            "Unable to initialize historical month."
         );
     }
 
-    const refreshed = await supabase
+    const refreshed =
+        await supabase
         .from("monthly_budgets")
         .select(
-        "id, month_start, salary"
+            "id, month_start, salary"
         )
         .eq("user_id", user.id)
         .eq(
-        "month_start",
-        requestedMonth
+            "month_start",
+            requestedMonth
         )
         .single();
 
@@ -168,31 +169,31 @@ export default async function DashboardPage({
     ) {
         throw new Error(
         refreshed.error?.message ??
-            "Monthly budget could not be loaded."
+            "Historical monthly budget could not be loaded."
         );
     }
 
-    monthlyBudget = refreshed.data;
+    monthlyBudget =
+        refreshed.data;
+    }
     }
   } else {
-    /*
-     * No month specified:
-     * always open the current calendar month.
-     *
-     * Existing historical/future months are preserved.
-     * If the current month does not exist yet,
-     * initialize it automatically.
-     */
-    const currentMonth = getCurrentMonthStart();
+    const currentMonth =
+      getCurrentMonthStart();
 
     const {
       data: currentBudget,
       error: currentBudgetError,
     } = await supabase
       .from("monthly_budgets")
-      .select("id, month_start, salary")
+      .select(
+        "id, month_start, salary"
+      )
       .eq("user_id", user.id)
-      .eq("month_start", currentMonth)
+      .eq(
+        "month_start",
+        currentMonth
+      )
       .maybeSingle();
 
     if (currentBudgetError) {
@@ -216,17 +217,18 @@ export default async function DashboardPage({
         );
       }
 
-      const refreshed = await supabase
-        .from("monthly_budgets")
-        .select(
-          "id, month_start, salary"
-        )
-        .eq("user_id", user.id)
-        .eq(
-          "month_start",
-          currentMonth
-        )
-        .single();
+      const refreshed =
+        await supabase
+          .from("monthly_budgets")
+          .select(
+            "id, month_start, salary"
+          )
+          .eq("user_id", user.id)
+          .eq(
+            "month_start",
+            currentMonth
+          )
+          .single();
 
       if (
         refreshed.error ||
@@ -238,7 +240,8 @@ export default async function DashboardPage({
         );
       }
 
-      monthlyBudget = refreshed.data;
+      monthlyBudget =
+        refreshed.data;
     }
   }
   const {
