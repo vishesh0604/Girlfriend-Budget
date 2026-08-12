@@ -17,6 +17,7 @@ import BudgetHeadEditor from "./BudgetHeadEditor";
 import MonthNavigator from "./MonthNavigator";
 import PushRemainingButton from "./PushRemainingButton";
 import HomeButton from "./HomeButton";
+import HelpButton from "../home/HelpButton";
 
 type DashboardPageProps = {
   searchParams: Promise<{
@@ -546,23 +547,115 @@ export default async function DashboardPage({
   return (
     <main className="min-h-screen overflow-x-hidden bg-zinc-50 px-5 py-8 text-zinc-950 sm:px-8">
     <div className="mx-auto max-w-5xl">
-        <div className="mb-4 flex items-center justify-between gap-4">
+    <div className="mb-4 flex items-center justify-between gap-4">
+    <div className="flex items-center gap-2">
         <HomeButton />
 
-        <PushRemainingButton
-            monthlyBudgetId={monthlyBudget.id}
-            heads={headStates.map((head) => ({
-            id: head.id,
-            name: head.name,
-            remaining: head.state.finalBalance,
-            }))}
-        />
-        </div>
+        <HelpButton
+        title="Dashboard"
+        align="center"
+        >
+        <div className="space-y-5">
+            <div>
+            <p className="font-semibold text-[#26354d]">
+                Month Navigator
+            </p>
+            <p className="mt-1">
+                Use the month and year selectors to move between your current,
+                previous, and future monthly budgets. The Dashboard updates to
+                show the selected month.
+            </p>
+            </div>
 
-        <MonthNavigator
-        monthStart={monthlyBudget.month_start}
-        />
-        <section className="space-y-4">
+            <div>
+            <p className="font-semibold text-[#26354d]">
+                Salary
+            </p>
+            <p className="mt-1">
+                Your monthly income for the selected month. This is the starting
+                point for the main budget calculations.
+            </p>
+            </div>
+
+            <div>
+            <p className="font-semibold text-[#26354d]">
+                Committed
+            </p>
+            <p className="mt-1">
+                The total amount allocated to your committed budget heads,
+                with a breakdown into Fixed Expenses, Investments, and Savings.
+            </p>
+            </div>
+
+            <div>
+            <p className="font-semibold text-[#26354d]">
+                Spending Pool
+            </p>
+            <p className="mt-1">
+                The amount left from your salary after subtracting your
+                committed allocations.
+            </p>
+            </div>
+
+            <div>
+            <p className="font-semibold text-[#26354d]">
+                Daily Budget
+            </p>
+            <p className="mt-1">
+                Your Spending Pool divided across the number of days in the
+                selected month. This gives you the daily spending limit.
+            </p>
+            </div>
+
+            <div>
+            <p className="font-semibold text-[#26354d]">
+                Budget Heads
+            </p>
+            <p className="mt-1">
+                Each budget head shows its allocation, paid/used amount,
+                transfers, and current remaining balance. The remaining balance
+                is updated as you make changes.
+            </p>
+            </div>
+
+            <div>
+            <p className="font-semibold text-[#26354d]">
+                Push Remaining
+            </p>
+            <p className="mt-1">
+                Moves selected remaining budget-head balances into the
+                immediately following month. It has its own ? for more
+                information.
+            </p>
+            </div>
+
+            <div>
+            <p className="font-semibold text-[#26354d]">
+                Current Balances
+            </p>
+            <p className="mt-1">
+                Shows the remaining balance of each budget head after payments,
+                usage, and transfers. It has its own ? for more information.
+            </p>
+            </div>
+        </div>
+        </HelpButton>
+    </div>
+
+    <PushRemainingButton
+        monthlyBudgetId={monthlyBudget.id}
+        heads={headStates.map((head) => ({
+        id: head.id,
+        name: head.name,
+        remaining: head.state.finalBalance,
+        }))}
+    />
+    </div>
+            <MonthNavigator
+            monthStart={monthlyBudget.month_start}
+            />
+
+            <section className="space-y-4">
           {/* Primary summary */}
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -801,15 +894,79 @@ export default async function DashboardPage({
             {/* Current account balance */}
             <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
             <div className="flex items-center justify-between gap-4">
-                <div>
-                <h2 className="text-sm font-semibold">
-                    Current Account Balance
-                </h2>
+<div className="flex items-center justify-between gap-4">
+  <div>
+    <div className="flex items-center gap-1.5">
+      <h2 className="text-sm font-semibold">
+        Current Account Balance
+      </h2>
 
-                <p className="mt-0.5 text-xs text-zinc-500">
-                    After Paid / Used and transfers
-                </p>
-                </div>
+      <HelpButton
+        title="Current Account Balance"
+        align="inline"
+      >
+
+        <div>
+          <p className="font-semibold text-[#26354d]">
+            How the Balance is structured?
+          </p>
+
+        <p className="mt-1">
+        The system assumes that your Fixed Expenses, Investments,
+        and Savings are kept in one particular bank account, while
+        your Spending Pool is kept in another bank account.
+        <br />
+        The Current Account Balance shown here represents the money
+        remaining across your budget heads based on this budgeting
+        structure.
+        </p>
+
+        </div>
+
+                <div>
+          <p className="font-semibold text-[#26354d]">
+            What is Current Account Balance?
+          </p>
+
+          <p className="mt-1">
+            Your Current Account Balance is the total amount
+            currently remaining across all your budget heads.
+            It represents the money that is still available
+            after your spending, payments, and transfers.
+          </p>
+        </div>
+
+        <div>
+          <p className="font-semibold text-[#26354d]">
+            Budget Head Breakdown
+          </p>
+
+          <p className="mt-1">
+            The card shows each budget head that has a remaining
+            balance, along with the amount remaining in that head.
+            Budget heads with ₹0 remaining are not shown.
+          </p>
+        </div>
+
+        <div>
+          <p className="font-semibold text-[#26354d]">
+            Total Balance
+          </p>
+
+          <p className="mt-1">
+            The Total is the sum of all the remaining balances
+            shown above. It updates automatically whenever a
+            budget head changes.
+          </p>
+        </div>
+      </HelpButton>
+    </div>
+
+    <p className="mt-0.5 text-xs text-zinc-500">
+      After Paid / Used and transfers
+    </p>
+  </div>
+</div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">

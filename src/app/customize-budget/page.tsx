@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import BudgetHeadForm from "./BudgetHeadForm";
+import HelpButton from "../home/HelpButton";
 
 export default async function CustomizeBudgetPage() {
   const supabase = await createClient();
@@ -37,11 +38,79 @@ export default async function CustomizeBudgetPage() {
       <div className="mx-auto w-full max-w-4xl">
 
         <div className="mb-8">
-        <HomeButton />
+          <HomeButton />
 
-          <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
-            Customize Budget
-          </h1>
+          <div className="mt-4 flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
+              Customize Budget
+            </h1>
+
+            <HelpButton
+              title="Customize Budget"
+              align="inline"
+            >
+              <div>
+                <p className="font-semibold text-[#26354d]">
+                  Manage Your Budget Heads
+                </p>
+
+                <p className="mt-1">
+                  Customize Budget is where you set up and
+                  manage the budget heads used throughout
+                  your monthly budget.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-[#26354d]">
+                  Add Budget Heads
+                </p>
+
+                <p className="mt-1">
+                  Create a new budget head by giving it a
+                  name, selecting its type, and setting its
+                  default monthly allocation.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-[#26354d]">
+                  Edit Budget Heads
+                </p>
+
+                <p className="mt-1">
+                  You can change a budget head&apos;s name,
+                  type, and default monthly allocation
+                  whenever needed.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-[#26354d]">
+                  Deactivate Budget Heads
+                </p>
+
+                <p className="mt-1">
+                  Deactivating a budget head removes it from
+                  newly created monthly budgets while
+                  preserving its existing history.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-[#26354d]">
+                  Future vs. Historical Months
+                </p>
+
+                <p className="mt-1">
+                  Changes to your budget configuration apply
+                  to future monthly budgets. Existing
+                  historical monthly records are kept
+                  unchanged.
+                </p>
+              </div>
+            </HelpButton>
+          </div>
 
           <p className="mt-2 text-sm text-[#647086]">
             Manage your budget heads and their default
@@ -112,7 +181,6 @@ export default async function CustomizeBudgetPage() {
                     }}
                     isActive={head.is_active}
                   />
-
                 </div>
               </div>
             ))

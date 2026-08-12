@@ -7,9 +7,9 @@ export default function HomeButton() {
     <PageTransition
       href="/home"
       type="home"
-      className="mb-5 inline-flex items-center rounded-xl border border-[#f3b9cd] bg-[#ffdce9] px-4 py-2 text-sm font-medium text-[#26354d] transition hover:bg-[#ffe8f0]"
+      className="inline-flex items-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-100"
     >
-      ← Home
+      Home
     </PageTransition>
   );
 }

@@ -216,3 +216,28 @@ a {
 a:hover {
   color: var(--accent-pink-dark);
 }
+ /* -------------------------------------------------------
+    HELP POPUP SCROLLBAR
+ ------------------------------------------------------- */
+
+.help-popup-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--navy) transparent;
+}
+
+.help-popup-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.help-popup-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.help-popup-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--navy);
+  border-radius: 999px;
+}
+
+.help-popup-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent-blue-dark);
+}

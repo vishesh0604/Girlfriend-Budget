@@ -1,3 +1,7 @@
+# Ideas to Implement
+Question mmark button on each page
+Proper Budget Tracker
+
 # Personal Budget App — Project Specification
 
 Version: 1.0
