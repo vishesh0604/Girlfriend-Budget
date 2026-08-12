@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
 type MonthNavigatorProps = {
   monthStart: string;
@@ -66,16 +67,30 @@ function buildMonthStart(
   return `${year}-${month}-01`;
 }
 
+function LoadingDots() {
+  return (
+    <span
+      className="inline-flex items-center gap-1"
+      aria-hidden="true"
+    >
+      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.2s]" />
+      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.1s]" />
+      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" />
+    </span>
+  );
+}
+
 export default function MonthNavigator({
   monthStart,
 }: MonthNavigatorProps) {
+  const router = useRouter();
+
+  const [isNavigating, startTransition] =
+    useTransition();
+
   const { year, month } =
     getMonthParts(monthStart);
 
-  /*
-   * Give the selector a useful range around the
-   * current year without affecting any database data.
-   */
   const years = Array.from(
     { length: 21 },
     (_, index) => year - 10 + index
@@ -91,34 +106,63 @@ export default function MonthNavigator({
     1
   );
 
-  const selectedMonth = buildMonthStart(
-    year,
-    month
-  );
+  function navigateToMonth(
+    targetMonth: string
+  ) {
+    if (isNavigating) {
+      return;
+    }
+
+    startTransition(() => {
+      router.push(
+        `/dashboard?month=${targetMonth}`
+      );
+    });
+  }
 
   return (
-    <div className="mb-8 flex items-center justify-between gap-3">
+    <div className="relative mb-8 flex items-center justify-between gap-3">
+
+      {/* Updating budget indicator */}
+      <div
+        className={`pointer-events-none absolute left-1/2 top-[-55px] z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#f3b9cd] bg-[#ffdce9] px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-sm transition-opacity duration-150 ${
+          isNavigating
+            ? "opacity-100"
+            : "opacity-0"
+        }`}
+        aria-live="polite"
+      >
+        <LoadingDots />
+        <span>Updating budget</span>
+      </div>
+
       {/* Previous month */}
-      <Link
-        href={`/dashboard?month=${previousMonth}`}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg text-zinc-600 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-950"
+      <button
+        type="button"
+        onClick={() =>
+          navigateToMonth(previousMonth)
+        }
+        disabled={isNavigating}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg text-zinc-600 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:bg-zinc-50 hover:text-zinc-950 hover:shadow-md active:translate-y-0.5 active:scale-95 disabled:cursor-wait disabled:opacity-60"
         aria-label="Previous month"
       >
         ←
-      </Link>
+      </button>
 
       {/* Month / Year selectors */}
       <div className="flex min-w-0 items-center justify-center gap-2">
         <select
           value={month}
-          onChange={(event) => {
-            window.location.href =
-              `/dashboard?month=${buildMonthStart(
+          disabled={isNavigating}
+          onChange={(event) =>
+            navigateToMonth(
+              buildMonthStart(
                 year,
                 event.target.value
-              )}`;
-          }}
-          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-lg font-semibold text-zinc-950 shadow-sm outline-none transition focus:border-zinc-400"
+              )
+            )
+          }
+          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-lg font-semibold text-zinc-950 shadow-sm outline-none transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md focus:border-zinc-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
           aria-label="Select month"
         >
           {months.map((item) => (
@@ -133,14 +177,16 @@ export default function MonthNavigator({
 
         <select
           value={String(year)}
-          onChange={(event) => {
-            window.location.href =
-              `/dashboard?month=${buildMonthStart(
+          disabled={isNavigating}
+          onChange={(event) =>
+            navigateToMonth(
+              buildMonthStart(
                 Number(event.target.value),
                 month
-              )}`;
-          }}
-          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-lg font-semibold text-zinc-950 shadow-sm outline-none transition focus:border-zinc-400"
+              )
+            )
+          }
+          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-lg font-semibold text-zinc-950 shadow-sm outline-none transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md focus:border-zinc-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
           aria-label="Select year"
         >
           {years.map((item) => (
@@ -155,13 +201,17 @@ export default function MonthNavigator({
       </div>
 
       {/* Next month */}
-      <Link
-        href={`/dashboard?month=${nextMonth}`}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg text-zinc-600 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-950"
+      <button
+        type="button"
+        onClick={() =>
+          navigateToMonth(nextMonth)
+        }
+        disabled={isNavigating}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg text-zinc-600 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:bg-zinc-50 hover:text-zinc-950 hover:shadow-md active:translate-y-0.5 active:scale-95 disabled:cursor-wait disabled:opacity-60"
         aria-label="Next month"
       >
         →
-      </Link>
+      </button>
     </div>
   );
 }

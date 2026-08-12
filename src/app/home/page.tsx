@@ -1,4 +1,4 @@
-import Link from "next/link";
+import PageTransition from "@/components/PageTransition";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./LogoutButton";
@@ -33,10 +33,11 @@ export default async function HomePage() {
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
-            <Link
-              href="/dashboard"
-              className="group rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-            >
+                <PageTransition
+                href="/dashboard"
+                type="dashboard"
+                className="group rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe8f0] text-[#4f8fbd]">
                 <svg
                   width="25"
@@ -72,10 +73,11 @@ export default async function HomePage() {
               <div className="mt-6 font-medium text-[#3978a5]">
                 Open Dashboard →
               </div>
-            </Link>
+            </PageTransition>
 
-            <Link
+            <PageTransition
               href="/customize-budget"
+              type="customize"
               className="group rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe8f0] text-[#d96b91]">
@@ -108,7 +110,7 @@ export default async function HomePage() {
               <div className="mt-6 font-medium text-[#c4567d]">
                 Customize Budget →
               </div>
-            </Link>
+            </PageTransition>
           </div>
 
           <div className="mt-8 text-center">

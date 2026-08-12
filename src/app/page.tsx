@@ -4,6 +4,52 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+function LoginTransition() {
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex min-h-screen items-center justify-center bg-[#e5f6ff]"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex flex-col items-center text-center">
+        <div className="relative mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#f3b9cd] bg-[#ffdce9] shadow-sm">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ffe8f0] text-lg font-semibold text-[#4f8fbd]">
+            ₹
+          </div>
+
+          <div className="absolute inset-0 animate-ping rounded-2xl border border-[#f3b9cd] opacity-25" />
+        </div>
+
+        <h1 className="text-xl font-semibold tracking-tight text-[#26354d]">
+          Welcome back
+        </h1>
+
+        <p className="mt-1.5 text-sm text-[#647086]">
+          Opening your budget...
+        </p>
+
+        <div className="mt-5 flex items-center gap-1.5">
+          <span
+            className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#26354d]"
+            style={{
+              animationDelay: "-0.2s",
+            }}
+          />
+
+          <span
+            className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#26354d]"
+            style={{
+              animationDelay: "-0.1s",
+            }}
+          />
+
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#26354d]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const router = useRouter();
   const supabase = createClient();
@@ -12,6 +58,8 @@ export default function HomePage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showTransition, setShowTransition] =
+    useState(false);
 
   async function handleLogin(
     e: React.FormEvent<HTMLFormElement>
@@ -33,8 +81,12 @@ export default function HomePage() {
       return;
     }
 
-    router.push("/home");
-    router.refresh();
+    setShowTransition(true);
+
+    window.setTimeout(() => {
+      router.push("/home");
+      router.refresh();
+    }, 2000);
   }
 
   return (
@@ -170,8 +222,13 @@ export default function HomePage() {
             </button>
 
           </form>
+
         </div>
+
       </div>
+
+      {showTransition && <LoginTransition />}
+
     </main>
   );
 }

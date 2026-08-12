@@ -1,4 +1,4 @@
-import Link from "next/link";
+import HomeButton from "./HomeButton";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
@@ -37,12 +37,7 @@ export default async function CustomizeBudgetPage() {
       <div className="mx-auto w-full max-w-4xl">
 
         <div className="mb-8">
-          <Link
-            href="/home"
-            className="mb-5 inline-flex items-center rounded-xl border border-[#f3b9cd] bg-[#ffdce9] px-4 py-2 text-sm font-medium text-[#26354d] transition hover:bg-[#ffe8f0]"
-          >
-            ← Home
-          </Link>
+        <HomeButton />
 
           <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
             Customize Budget

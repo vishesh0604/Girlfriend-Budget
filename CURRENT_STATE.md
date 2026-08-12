@@ -163,7 +163,27 @@ Stores individual transfers between budget heads.
 - AI_INSTRUCTIONS.md
 
 ## Currently Working On
-Preparing the application for Step 14: mobile UI.
+xx
+
+## Multi-User Support
+
+The application supports multiple authenticated users.
+
+Each user has completely independent:
+- Budget heads
+- Monthly budgets
+- Monthly budget heads
+- Transfers
+- Future carry-forwards
+- Budget configuration
+
+All user-owned database records are isolated by `user_id`.
+
+New users start with a blank budget configuration. They do not inherit or copy another user's budget heads.
+
+The application must never expose one user's financial data to another user.
+
+The database uses Supabase Row Level Security to enforce user isolation.
 
 ## Budget Configuration & Navigation — Implementation Plan
 
@@ -890,7 +910,8 @@ Steps 2–14: NOT STARTED
 
 ## Decisions
 
-- Single private user
+- Multi-user authenticated application
+- Each user has an independent private budget
 - One web application
 - Persistent Supabase/PostgreSQL database
 - Budget heads are editable

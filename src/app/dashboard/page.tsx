@@ -16,6 +16,7 @@ import SalaryEditor from "./SalaryEditor";
 import BudgetHeadEditor from "./BudgetHeadEditor";
 import MonthNavigator from "./MonthNavigator";
 import PushRemainingButton from "./PushRemainingButton";
+import HomeButton from "./HomeButton";
 
 type DashboardPageProps = {
   searchParams: Promise<{
@@ -542,12 +543,7 @@ export default async function DashboardPage({
     <main className="min-h-screen overflow-x-hidden bg-zinc-50 px-5 py-8 text-zinc-950 sm:px-8">
     <div className="mx-auto max-w-5xl">
         <div className="mb-4 flex items-center justify-between gap-4">
-        <Link
-            href="/home"
-            className="inline-flex items-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-100"
-        >
-            ← Home
-        </Link>
+        <HomeButton />
 
         <PushRemainingButton
             monthlyBudgetId={monthlyBudget.id}
