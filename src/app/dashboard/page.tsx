@@ -536,6 +536,10 @@ export default async function DashboardPage({
       spendingPool,
       numberOfDays
     );
+  const currentAccountBalance = headStates.reduce(
+    (total, head) => total + head.state.finalBalance,
+    0
+  );
 
 
 
@@ -721,12 +725,12 @@ export default async function DashboardPage({
             })}
           </div>
 
-          {/* Current balances summary */}
+          {/* Current budget head balances summary */}
           <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-sm font-semibold">
-                  Current Balances
+                  Current Budget Head Balances
                 </h2>
 
                 <p className="mt-0.5 text-xs text-zinc-500">
@@ -794,6 +798,53 @@ export default async function DashboardPage({
               </div>
             </div>
           </div>
+            {/* Current account balance */}
+            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+                <div>
+                <h2 className="text-sm font-semibold">
+                    Current Account Balance
+                </h2>
+
+                <p className="mt-0.5 text-xs text-zinc-500">
+                    After Paid / Used and transfers
+                </p>
+                </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+                {headStates
+                .filter(
+                    (head) => head.state.finalBalance > 0
+                )
+                .map((head) => (
+                    <div
+                    key={head.id}
+                    className="flex items-baseline gap-2 whitespace-nowrap"
+                    >
+                    <span className="text-sm text-zinc-500">
+                        {head.name}
+                    </span>
+
+                    <span className="text-sm font-semibold">
+                        {formatCurrency(head.state.finalBalance)}
+                    </span>
+                    </div>
+                ))}
+            </div>
+
+            <div className="mt-4 border-t border-zinc-100 pt-3">
+                <div className="flex items-baseline gap-2">
+                <span className="text-sm text-zinc-500">
+                    Total
+                </span>
+
+                <span className="text-2xl font-semibold">
+                    {formatCurrency(currentAccountBalance)}
+                </span>
+                </div>
+            </div>
+            </div>
         </section>
       </div>
     </main>

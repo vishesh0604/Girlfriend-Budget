@@ -1,941 +1,878 @@
-# Note to Self
-Fix other budget head
-Fix carryforward
+# BUDGET TRACKER — CURRENT STATE
 
+> **New-chat continuation trigger:** Say **“Continue Budget Tracker.”**
+>
+> Use this document as the handoff point. Do not restart completed work or ask the user to re-explain the project unless the required detail is genuinely missing.
 
+---
 
-# CURRENT STATE
-Developing
-## Project
-Personal Budget App
+# 1. PROJECT
 
-## Status
-Development
+**Personal Budget App / Budget Tracker**
 
-## Current Milestone
-Monthly budget dashboard
+## Stack
 
-## Completed
+- Next.js 16.3.0
+- React
+- TypeScript
+- Tailwind CSS
+- Supabase Auth
+- Supabase PostgreSQL
+- Supabase RLS
+- Vercel
+- Git/GitHub
 
-- [x] Project created
-- [x] Next.js configured
-- [x] TypeScript configured
-- [x] Tailwind CSS configured
-- [x] ESLint configured
-- [x] App Router configured
-- [x] Supabase project created
-- [x] Supabase packages installed
-- [x] Environment variables configured
-- [x] Supabase browser client created
-- [x] Supabase server client created
+## Current Status
+
+**Stable development state. Core budgeting, multi-user auth, navigation UX, and loading UX are working. Production build passes.**
+
+---
+
+# 2. COMPLETED CORE FUNCTIONALITY
+
+- [x] Next.js / TypeScript / Tailwind / App Router setup
 - [x] Supabase connected
-- [x] Database schema created
-- [x] Row Level Security enabled
-- [x] Database indexes created
-- [x] Database policies created
-- [x] Database connection tested
-- [x] Basic application connection test created
-- [x] Supabase authentication configured
-- [x] Private user created
-- [x] Login page implemented
-- [x] Password authentication tested
-- [x] Protected dashboard implemented
-- [x] Authentication session protection implemented
-- [x] Unauthenticated dashboard access tested
-- [x] Temporary Supabase connection test removed/replaced
-- [x] Login page confirmed working after replacement
-- [x] Protected dashboard confirmed working after replacement
-- [x] Initial budget heads seeded through the application
-- [x] Initial budget-head persistence verified
-- [x] Budget heads stored in Supabase
-- [x] Budget head categories confirmed editable/data-driven
-- [x] Centralized financial calculation engine created
-- [x] Spending pool calculation implemented
-- [x] Daily budget calculation implemented
-- [x] Transfer validation implemented
-- [x] Carry-forward calculation implemented
-- [x] Automated calculation tests created
-- [x] All 14 calculation tests passing
-- [x] Committed allocation calculation centralized
-- [x] Fixed Expense / Investment / Saving classification implemented
-- [x] Other heads excluded from committed allocation
-- [x] Calculation test suite expanded to 17 passing tests
-- [x] Dashboard verified after calculation-engine update
-- [x] Monthly summary breakdown implemented
-- [x] Fixed Expenses / Investments / Savings displayed separately
-- [x] Spending Pool and Daily Budget verified
-- [x] Dashboard summary verified after UI update
-- [x] Dashboard loads the latest saved monthly budget
-- [x] August 2026 remains correctly loaded after dynamic month selection
-- [x] Daily budget now derives calendar days from the loaded month
-- [x] Dashboard verified after month-loading change
-- [x] Dashboard summary redesigned into primary metrics + horizontal committed breakdown
-- [x] Salary, Spending Pool, and Daily Budget shown as primary cards
-- [x] Committed total shown with Fixed Expenses, Investments, and Savings breakdown
-- [x] Dashboard layout verified
-- [x] 18 calculation tests passing
-- [x] Salary editing implemented for the active monthly budget
-- [x] Salary update persisted to Supabase
-- [x] Spending Pool recalculates after salary change
-- [x] Daily Budget recalculates after salary change
-- [x] Salary persistence verified after page reload
-- [x] Salary restored to ₹31,500
-- [x] 18 calculation tests passing
-- [x] Final database verification completed
-- [x] Dashboard values match database values
-- [x] Task #8 complete
-- [x] Monthly budget-head allocation editing implemented
-- [x] Monthly allocation changes persist to Supabase
-- [x] Allocation changes recalculate Committed
-- [x] Allocation changes recalculate Spending Pool
-- [x] Allocation changes recalculate Daily Budget
-- [x] Historical monthly snapshot is updated rather than reusable budget-head defaults
-- [x] Budget-head editing verified
-- [x] 18 calculation tests passing
-- [x] Paid / Used editing implemented
-- [x] Paid / Used changes persist to Supabase
-- [x] Remaining balance recalculates from Paid / Used
-- [x] Paid / Used cannot exceed allocation
-- [x] Paid / Used editing verified
-- [x] 18 calculation tests passing
-- [x] Transfer UI implemented
-- [x] Transfers persist to Supabase
-- [x] Source balance decreases after transfer
-- [x] Destination balance increases after transfer
-- [x] Transfer amount validation verified
-- [x] Self-transfer prevention verified
-- [x] Transfer persistence verified
-- [x] 18 calculation tests passing
-- [x] Automatic monthly carry-forward implemented
-- [x] Previous month's final balances are used to initialize the next month's carry-forward
-- [x] Carry-forward accounts for paid/used amounts and transfers
-- [x] Existing historical months are preserved
-- [x] Carry-forward verified with Electricity test case: ₹3,000 allocation, ₹425 paid/used, ₹2,575 carried forward
-- [x] September 2026 recreated and verified with ₹2,575 Electricity carry-forward and ₹5,575 total available
-- [x] Mandatory functional test cases completed
-- [x] Transfer + carry-forward test passed
-- [x] No-transfer carry-forward test passed
-- [x] Carry-forward + Paid/Used test passed
-- [x] Multiple-transfer test passed
-- [x] Historical month isolation verified
-- [x] Transfer validation verified
-- [x] Data persistence verified
-- [x] Month navigation verified
-- [x] Budget-head ordering verified
+- [x] Database schema and indexes
+- [x] Row Level Security
+- [x] Authentication
+- [x] Login
+- [x] Protected routes
+- [x] Multiple authenticated users
+- [x] User-specific budgets
+- [x] User-specific budget heads
+- [x] User-specific monthly budgets
+- [x] User-specific monthly budget heads
+- [x] User-specific transfers
+- [x] Centralized financial calculation engine
+- [x] Spending Pool
+- [x] Daily Budget
+- [x] Committed allocation
+- [x] Fixed Expense / Investment / Saving classification
+- [x] Paid / Used editing
+- [x] Allocation editing
+- [x] Transfers
+- [x] Manual Push Remaining / one-month carry-forward behavior
+- [x] Monthly navigation
+- [x] Historical months
+- [x] Future months
+- [x] Salary editing
+- [x] Home page
+- [x] Customize Budget page
+- [x] Logout
+- [x] Personalized navigation/loading UX
+- [x] Production build verification
 
-## Database Structure
+Calculation tests reached 18 passing tests during development.
 
-### budget_heads
-Stores reusable, editable budget-head configuration.
+---
 
-### monthly_budgets
-Stores month-level information including salary.
+# 3. MULTI-USER SUPPORT
 
-### monthly_budget_heads
-Stores historical monthly snapshots of budget heads.
+The application is now a true multi-user application.
 
-### transfers
-Stores individual transfers between budget heads.
+Each authenticated user has independent:
 
-## Files Created / Changed
-### Authentication
-- src/app/page.tsx
-- src/app/dashboard/page.tsx
-- src/lib/supabase/proxy.ts
-- proxy.ts
-### Project
-- package.json
-- package-lock.json
-- Next.js configuration files
-- TypeScript configuration files
-
-### Supabase
-- .env.local
-- src/lib/supabase/client.ts
-- src/lib/supabase/server.ts
-
-### Application
-- src/app/page.tsx
-
-### Project Documentation
-- PROJECT_SPEC.md
-- CURRENT_STATE.md
-- AI_INSTRUCTIONS.md
-
-## Currently Working On
-xx
-
-## Multi-User Support
-
-The application supports multiple authenticated users.
-
-Each user has completely independent:
 - Budget heads
 - Monthly budgets
 - Monthly budget heads
 - Transfers
-- Future carry-forwards
+- Carry-forward data
 - Budget configuration
 
-All user-owned database records are isolated by `user_id`.
+New users start with a blank budget configuration.
 
-New users start with a blank budget configuration. They do not inherit or copy another user's budget heads.
+A previous bug caused a new user to inherit/show ₹31,500 salary. This was fixed.
 
-The application must never expose one user's financial data to another user.
+New users now correctly start with:
 
-The database uses Supabase Row Level Security to enforce user isolation.
+```text
+Salary = ₹0
+```
 
-## Budget Configuration & Navigation — Implementation Plan
+Database isolation is enforced with RLS policies using:
 
-### Step 1 — Home Page + Navigation
-- Create authenticated Home page
-- After login, route user to Home
-- Provide Dashboard option
-- Provide Customize Budget option
-- Provide Logout option
-- Allow Dashboard → Home
-- Allow Customize Budget → Home
+```sql
+auth.uid() = user_id
+```
 
-### Step 2 — Budget-Head CRUD Server Actions
-- Add budget head
-- Edit budget head name
-- Edit budget head type
-- Edit default monthly allocation
-- Deactivate budget head
-- Preserve historical records
-
-### Step 3 — Customize Budget UI
-- Create dedicated Customize Budget page
-- Display all active budget heads
-- Add "+ Add Budget Head"
-- Add Edit controls
-- Add Deactivate controls
-- Support mobile layout
-
-### Step 4 — Connect New Heads to Future Monthly Budgets
-- New active heads appear in future months
-- Updated allocations apply to future months
-- Deactivated heads do not appear in newly created months
-- Existing monthly records remain unchanged
-
-### Step 5 — Verify Historical Months Aren't Altered
-- Test allocation changes
-- Test name changes
-- Test type changes
-- Test deactivation
-- Test newly added heads
-- Confirm historical monthly snapshots remain intact
-
-### Step 6 — Logout + Navigation Testing
-- Test login → Home
-- Test Home → Dashboard
-- Test Home → Customize Budget
-- Test Dashboard → Home
-- Test Customize Budget → Home
-- Test Logout → Login
-- Test protected routes while logged out
-
-### Step 7 — Production Build
-- Run `npm run build`
-- Fix all TypeScript/build errors
-- Confirm production build succeeds
-
-### Step 8 — Update Project Documentation
-- Update CURRENT_STATE.md
-- Update project checklist
-- Record completed functionality
-- Record remaining issues
-- Confirm implementation status
-
-# Bank Account Tracker — Build Plan
-
-## Objective
-
-Add a separate Bank Account tracker to the budgeting application.
-
-The Bank Account tracker is ONLY concerned with money allocated to:
-
-- Fixed Expenses
-- Investments
-
-It is NOT connected to:
-
-- Spending Pool
-- Salary leftover
-- Savings budget heads
-- Other budget heads
-
-The tracker represents the amount of money that should remain in the bank account from the Fixed Expense + Investment pool.
+Never expose one user's financial data to another user.
 
 ---
 
-# Step 1 — Define Bank Account Logic
+# 4. DATABASE
 
-## Eligible Budget Heads
+## `budget_heads`
 
-Only budget heads with the following types are included:
+Reusable user-specific budget-head configuration.
 
-- `Fixed Expense`
-- `Investment`
+## `monthly_budgets`
 
-The following are excluded:
+Month-level records including salary.
 
-- `Saving`
-- `Other`
-- Spending Pool
+## `monthly_budget_heads`
+
+Historical monthly snapshots containing allocation, carry-forward and paid/used amounts.
+
+## `transfers`
+
+Individual transfers between budget heads.
+
+All user-owned records must remain isolated by `user_id`.
+
+---
+
+# 5. DASHBOARD
+
+The dashboard currently supports:
+
 - Salary
-
-## First Month
-
-For the first month being tracked:
-
-`Starting Bank Balance = Total Fixed Expense Allocations + Total Investment Allocations`
-
-Example:
-
-- Salary = ₹31,500
-- Fixed Expenses + Investments = ₹16,500
-- Spending Pool = ₹15,000
-
-The Bank Account tracker starts at:
-
-`₹16,500`
-
-The ₹15,000 Spending Pool is completely ignored.
-
-## Actual Payments
-
-A budget head only reduces the Bank Account balance when an actual payment is recorded.
-
-Example:
-
-- Netflix allocation = ₹495
-- Netflix paid = ₹495
-
-Bank Account:
-
-`₹16,500 - ₹495 = ₹16,005`
-
-If:
-
-- Rent allocation = ₹1,666
-- Rent paid = ₹0
-
-Rent does NOT reduce the Bank Account balance yet.
-
-## Partial Payments
-
-Only the actual paid amount is deducted.
-
-Example:
-
-- Investment allocation = ₹5,000
-- Investment paid = ₹2,000
-
-Only ₹2,000 is deducted from the Bank Account.
-
-## Monthly Carry-Forward
-
-At the end of each month, the remaining Bank Account balance is carried forward.
-
-Example:
-
-August:
-
-- Starting Balance = ₹16,500
-- Actual Payments = ₹12,500
-- Ending Balance = ₹4,000
-
-September:
-
-`Previous Ending Balance + September Fixed/Investment Allocations`
-
-`₹4,000 + ₹16,500 = ₹20,500`
-
-September therefore starts with ₹20,500.
-
-## Subsequent Month Formula
-
-For every month after the first:
-
-`Starting Balance = Previous Month Ending Balance + Current Month Fixed Expense Allocations + Current Month Investment Allocations`
-
-Then:
-
-`Ending Balance = Starting Balance - Actual Paid Amount`
-
-## Historical Months
-
-Historical months must never be retroactively changed by:
-
-- Creating a new budget head
-- Changing a budget head's default allocation
-- Changing a future allocation
-- Changing current budget configuration
-
-Each month's Bank Account balance must represent that month's actual historical state.
-
-## Allocation vs Payment
-
-Allocation and payment are separate concepts.
-
-An allocation represents the amount planned for a budget head.
-
-A payment represents money that has actually left the bank.
-
-Only the payment amount affects the Bank Account balance.
-
-## Transfers
-
-Transfers between budget heads must be explicitly evaluated before being included in the Bank Account calculation.
-
-A budget transfer should not automatically be treated as money leaving the bank.
-
-The Bank Account tracker should only reflect actual money movement.
-
----
-
-# Step 2 — Database Structure
-
-Create persistent monthly Bank Account records.
-
-The database structure should maintain:
-
-- User
-- Monthly Budget
-- Starting Balance
-- Fixed + Investment Allocation
-- Actual Paid Amount
-- Ending Balance
-- Created At
-- Updated At
-
-Verify:
-
-- Column types
-- Foreign keys
-- Unique constraints
-- RLS/security
-- One Bank Account record per user per month
-
----
-
-# Step 3 — Calculation Engine
-
-Create the Bank Account calculation logic independently from the UI.
-
-Required calculations:
-
-`Starting Balance`
-
-`+ Current Fixed Expense + Investment Allocations`
-
-`- Actual Paid Amount`
-
-`= Ending Balance`
-
-For subsequent months:
-
-`Previous Ending Balance`
-
-`+ Current Fixed Expense + Investment Allocations`
-
-`- Actual Paid Amount`
-
-`= Ending Balance`
-
-Test with artificial values before connecting to the UI.
-
----
-
-# Step 4 — Connect Existing Budget Heads
-
-Connect the Bank Account calculation to the existing:
-
-`monthly_budget_heads`
-
-data.
-
-Use:
-
-- `allocated_amount`
-- `paid_amount`
-- `budget_heads.head_type`
-
-Do not create duplicate financial records for individual budget heads.
-
-Only Fixed Expense and Investment heads contribute to the Bank Account calculation.
-
----
-
-# Step 5 — Handle Transfers
-
-Determine how existing budget-head transfers affect the Bank Account.
-
-A transfer between budget heads is not automatically a bank transaction.
-
-Verify that:
-
-- Internal budget transfers do not incorrectly reduce the bank balance.
-- Actual payments continue to reduce the bank balance correctly.
-- The existing Dashboard transfer functionality remains unchanged.
-
----
-
-# Step 6 — Historical Month Protection
-
-Ensure that historical Bank Account balances remain fixed.
-
-Changing a budget head's:
-
-- Name
-- Default allocation
-- Active/deactive status
-- Type
-
-must not retroactively rewrite historical Bank Account balances.
-
-Future months may use updated configuration according to the existing monthly-budget rules.
-
----
-
-# Step 7 — Bank Account Server Action
-
-Create the server-side Bank Account logic.
-
-It should:
-
-1. Identify the selected month.
-2. Load the monthly budget.
-3. Load the month's budget heads.
-4. Filter Fixed Expense and Investment heads.
-5. Calculate their total allocation.
-6. Calculate actual paid amounts.
-7. Retrieve the previous month's ending balance.
-8. Calculate the current month's starting balance.
-9. Calculate the current month's ending balance.
-10. Persist the result.
-11. Return the result to the UI.
-
----
-
-# Step 8 — Automatic Monthly Initialization
-
-Integrate Bank Account initialization with the existing monthly budget initialization.
-
-When a new month is created:
-
-- Its Fixed Expense + Investment allocations are included.
-- Its previous month's ending Bank Account balance is carried forward.
-- Historical months remain unchanged.
-- Future months use the appropriate current budget-head configuration.
-
-No separate manual initialization should be required from the user.
-
----
-
-# Step 9 — Bank Account Page
-
-Create a separate page where the user can view the Bank Account tracker.
-
-The page should show:
-
-- Selected Month
-- Starting Bank Balance
-- Fixed Expense Allocation
-- Investment Allocation
-- Total Added
-- Actual Paid
-- Current Bank Balance
-
-Example:
-
-BANK ACCOUNT
-
-Starting Balance       ₹4,000
-Fixed Expenses         ₹10,000
-Investments             ₹6,500
-Total Added            ₹16,500
-Paid                    ₹2,495
---------------------------------
-Current Balance        ₹18,005
-
-The page must clearly communicate that this is NOT the Spending Pool.
-
----
-
-# Step 10 — Month Navigation
-
-The Bank Account page must support the same monthly navigation system as the Dashboard.
-
-Verify:
-
-- Previous month
-- Current month
-- Future month
-- Correct starting balance
-- Correct carry-forward
-- Correct payments
-- Correct ending balance
-
----
-
-# Step 11 — Bank Account Breakdown
-
-Provide enough information for the user to understand how the balance was calculated.
-
-Show:
-
-- Starting balance
-- Fixed Expense total
-- Investment total
-- Payments made
-- Ending/current balance
-
-The user should never have to guess where the displayed balance came from.
-
----
-
-# Step 12 — Mathematical Validation
-
-Test the following cases.
-
-### Test A — First Month
-
-Fixed + Investment = Starting Balance.
-
-### Test B — Nothing Paid
-
-The full eligible allocation remains in the account.
-
-### Test C — Everything Paid
-
-The eligible allocation is fully deducted.
-
-### Test D — Partial Payment
-
-Only the actual paid amount is deducted.
-
-### Test E — Unpaid Expense
-
-An unpaid allocation does not reduce the Bank Account.
-
-### Test F — Savings
-
-Saving budget heads have zero effect on the Bank Account.
-
-### Test G — Other
-
-Other budget heads have zero effect.
-
-### Test H — Spending Pool
-
-Spending Pool has zero effect.
-
-### Test I — Carry Forward
-
-Previous month's ending balance becomes part of the next month's starting balance.
-
-### Test J — Historical Month
-
-Changing current/future configuration does not modify historical Bank Account balances.
-
----
-
-# Step 13 — UI / Application Testing
-
-Verify:
-
-- Login
-- Home
-- Dashboard
-- Customize Budget
-- Bank Account
-- Logout
-- Navigation between all pages
-- Desktop layout
-- Mobile layout
-- Refresh behavior
-- Month navigation
-- Error handling
-
----
-
-# Step 14 — Production Audit
-
-Final audit covering:
-
-- Database integrity
-- RLS/security
-- Monthly initialization
-- Bank Account calculations
-- Fixed Expense filtering
-- Investment filtering
-- Spending Pool exclusion
-- Savings exclusion
-- Other exclusion
-- Payment calculations
-- Carry-forward
-- Historical protection
-- Future-month behavior
+- Spending Pool
+- Daily Budget
+- Committed total
+- Fixed Expenses breakdown
+- Investments breakdown
+- Savings breakdown
+- Budget-head listing
+- Monthly allocation editing
+- Paid/Used editing
+- Remaining balance
 - Transfers
-- UI
-- Navigation
-- Responsive layout
-- Production build
-- Git/deployment integrity
+- Manual Push Remaining
+- Month navigation
+- Historical months
+- Future months
 
-Final result:
+Financial values are database-driven.
 
-`BANK ACCOUNT TRACKER — PASS / FAIL`
-
----
-
-# Carry-Forward Redesign — Build Plan
-
-## Objective
-
-Replace the current automatic carry-forward system with a manual,
-one-month-only push system.
-
-The user should have explicit control over when remaining money from a
-budget head is transferred to the next month.
+**Do not hard-code salary, allocations, Spending Pool or Daily Budget.**
 
 ---
 
-# CF-1 — Understand Current Carry-Forward Code
+# 6. HISTORICAL MONTH FIX — COMPLETE
 
-Inspect the existing carry-forward implementation.
+Historical months such as July 2026 previously failed with:
 
-Identify:
+```text
+No budget exists for this historical month.
+```
 
-- Where previous-month balances are calculated.
-- Where `carry_forward` is created.
-- Where it is automatically transferred into a new month.
-- How `allocated_amount`, `paid_amount`, and `carry_forward` interact.
-- How transfers affect the current calculation.
-- Whether carry-forward can currently cascade across multiple months.
-- Which existing functions must be changed.
-- Which existing functionality must remain untouched.
+An attempted fix then produced:
 
-No code changes should be made until the current system is fully understood.
+```text
+Past months cannot be initialized automatically.
+```
 
----
+The correct behavior is now implemented:
 
-# CF-2 — Remove Automatic Propagation
+- Existing historical months load normally.
+- Historical months are not automatically initialized.
+- Current/future initialization remains allowed.
+- Historical monthly snapshots remain protected.
 
-Change the monthly initialization system so that:
-
-- New months receive their normal budget-head allocation.
-- New months start with `carry_forward = 0`.
-- Previous-month remaining balances are NOT automatically transferred.
-- Historical months remain unchanged.
-- Current-month allocations remain unchanged.
-- Future-month allocations remain unchanged.
-- Existing transfer functionality remains separate.
-
-Carry-forward will only occur when the user explicitly presses the
-Push button.
+This is currently working.
 
 ---
 
-# CF-3 — Build Manual Push Action
+# 7. MANUAL CARRY-FORWARD / PUSH
 
-Create a server action for manually pushing a budget head's remaining
-amount to the immediately following month.
+The current model is manual.
 
 Rules:
 
-- Only the selected budget head is pushed.
-- Only the current month's remaining amount is pushed.
-- The push affects exactly one month.
-- It cannot automatically continue into later months.
-- The next month's existing allocation remains intact.
-- The pushed amount becomes carry-forward in the next month.
-- The original month's allocation and payment history are not changed.
-- Zero remaining balance cannot be pushed.
-- The same amount must not be pushed twice accidentally.
-
-Example:
-
-August:
-
-Allocated: ₹1,666
-Paid: ₹1,000
-Remaining: ₹666
-
-Push → September:
-
-September allocation: ₹1,666
-September carry-forward: ₹666
-
-September available amount: ₹2,332
-
-The ₹666 must NOT automatically continue to October.
+- User explicitly presses Push Remaining.
+- Only the immediately following month receives the pushed amount.
+- It does not automatically cascade.
+- Original historical allocation/payment history remains intact.
+- Duplicate pushes must not duplicate the same remaining amount.
+- Existing transfer functionality remains separate.
 
 ---
 
-# CF-4 — Add Dashboard Push Button
+# 8. HOME / NAVIGATION
 
-Add a visible Push Remaining button to the Dashboard.
+Current route flow:
 
-The button should:
+```text
+Login
+  ↓
+Home
+  ├── Dashboard
+  ├── Customize Budget
+  └── Logout
+```
 
-- Clearly indicate that it pushes the remaining amount.
-- Push only to the immediately next month.
-- Be disabled or unavailable when remaining amount is zero.
-- Prevent accidental duplicate pushes.
-- Provide clear success/error feedback.
-- Not interfere with existing Edit, Activate, Deactivate, Delete,
-  Transfer, or payment functionality.
+Supported navigation:
 
----
-
-# CF-5 — Carry-Forward Testing
-
-Test all important cases.
-
-### Test A — Zero Remaining
-
-Allocated: ₹1,666
-Paid: ₹1,666
-Remaining: ₹0
-
-Push should do nothing.
-
-### Test B — Partial Remaining
-
-Allocated: ₹1,666
-Paid: ₹1,000
-Remaining: ₹666
-
-Push should transfer exactly ₹666 to the next month.
-
-### Test C — Completely Unpaid
-
-Allocated: ₹1,666
-Paid: ₹0
-Remaining: ₹1,666
-
-Push should transfer exactly ₹1,666.
-
-### Test D — Multiple Heads
-
-Push one head.
-
-Verify that other heads are unaffected.
-
-### Test E — Duplicate Push
-
-Press Push twice.
-
-Verify that the same remaining amount is not duplicated.
-
-### Test F — One-Month Limit
-
-August → September
-
-Verify that nothing automatically reaches October.
-
-### Test G — Manual Second Push
-
-September → October
-
-If September has remaining money, the user can manually push it
-again.
-
-### Test H — Historical Months
-
-Verify that historical months are not modified automatically.
-
-### Test I — Future Months
-
-Verify that future months receive their normal allocations without
-automatic carry-forward.
-
-### Test J — Existing Transfers
-
-Verify that the new carry-forward system does not break the existing
-budget-head transfer system.
+- Login → Home
+- Home → Dashboard
+- Home → Customize Budget
+- Dashboard → Home
+- Customize Budget → Home
+- Logout → Login
 
 ---
 
-# Completion Criteria
+# 9. CURRENT NAVIGATION / LOADING UX — APPROVED
 
-The redesign is complete only when:
+Phase 1 navigation/loading UX is complete and currently approved.
 
-- Automatic carry-forward is removed.
-- Manual push works.
-- Push affects only the next month.
-- Carry-forward cannot accidentally cascade.
-- Duplicate pushes are prevented.
-- Historical months remain protected.
-- Existing budget-head functionality remains intact.
-- Existing transfers remain intact.
-- All CF-5 tests pass.
+Each route has a personalized loading experience.
 
-# Current Progress
+## Login → Home
 
-## Bank Account Tracker
+```text
+Welcome back
+Opening your budget...
+```
 
-Step 1 — Define Bank Account Logic: COMPLETE
+## Home → Dashboard
 
-Steps 2–14: NOT STARTED
+```text
+Opening your budget
+Getting everything ready...
+```
 
-## Next Task
+## Home → Customize Budget
 
-1. Configure Supabase authentication. 🟢
-2. Create private login page. 🟢
-3. Protect the application from unauthenticated users. 🟢
-4. Verify authenticated database access. 🟢
-5. Remove/replace the temporary Supabase connection test. 🟢
-6. Seed initial budget heads through the application. 🟢
-7. Build centralized financial calculation logic. 🟢
-8. Build the monthly budget dashboard. 🟢
-9. Build budget-head editing. 🟢
-10. Build paid/used functionality. 🟢
-11. Build transfer functionality. 🟢
-12. Build automatic carry-forward. 🟢
-13. Build monthly navigation. 🟢
-14. Build mobile UI. 🟢
-15. Run mandatory functional test cases from PROJECT_SPEC.md. 🟢
-16. Deploy. 🟢
+```text
+Preparing your budget
+Opening your budget settings...
+```
 
-## Known Issues
+## Dashboard → Home
 
-- The current login page is functional but is still a basic implementation.
-- The dashboard is currently only a placeholder.
-- No budget data has been seeded yet.
-- No production budget UI has been built yet.
+```text
+Returning home
+Taking you back to your budget hub...
+```
 
-## Decisions
+## Customize Budget → Home
 
-- Multi-user authenticated application
-- Each user has an independent private budget
-- One web application
-- Persistent Supabase/PostgreSQL database
-- Budget heads are editable
-- Historical monthly data must never be overwritten
-- Transfers are stored as individual records
-- No detailed expense tracker
-- Carry-forward is automatic
-- Current budget values are initial data, not hard-coded rules
-- Budget categories are not hard-locked
-- Inactive budget heads retain historical records
-- Financial calculations will be centralized in application business logic
-- Row Level Security is enabled for database protection
+```text
+Returning home
+Taking you back to your budget hub...
+```
 
-## Important Constraints
+## Logout → Login
 
-- Do not hard-code budget heads.
-- Do not hard-code salary.
-- Do not hard-code current allocations.
-- Do not hard-code the spending pool.
-- Do not hard-code the daily budget.
-- Do not use spreadsheet-style cell logic.
-- Do not destroy historical records when configuration changes.
-- Do not allow transfers greater than available balance.
-- Do not expose personal financial data publicly.
-- Do not expose Supabase service-role credentials.
-- Do not build a detailed expense tracker.
-- Do not introduce unnecessary features before the core budgeting system is stable.
+```text
+See you soon
+Signing you out securely...
+```
+
+Visual theme:
+
+- Light blue background
+- Baby-pink cards/borders
+- Navy text
+- Animated dots / subtle icon animation
+
+**Do not redesign this unless explicitly requested.**
+
+---
+
+# 10. INTENTIONAL 2-SECOND TRANSITION
+
+The intentional transition delay is currently **2 seconds**.
+
+Two places contain the actual 2000ms delay.
+
+## `src/app/page.tsx`
+
+Login → Home:
+
+```tsx
+setTimeout(() => {
+  router.push("/home");
+  router.refresh();
+}, 2000);
+```
+
+## `src/components/PageTransition.tsx`
+
+Reusable navigation transitions contain the 2-second delay.
+
+If changing from 2 seconds to 1.5 seconds, change:
+
+```text
+2000 → 1500
+```
+
+in:
+
+1. `src/app/page.tsx`
+2. `src/components/PageTransition.tsx`
+
+The `loading.tsx` files do not control this intentional delay.
+
+### Important
+
+This delay is UX only.
+
+It does **not** reduce the actual database/server loading time.
+
+---
+
+# 11. MONTH NAVIGATOR — APPROVED STATE
+
+File:
+
+```text
+src/app/dashboard/MonthNavigator.tsx
+```
+
+The current appearance is correct and must be preserved.
+
+It has:
+
+- Previous month arrow
+- Month selector
+- Year selector
+- Next month arrow
+- Button press/hover feedback
+- Disabled state during navigation
+- Baby-pink `Updating budget` pill
+- Animated dots
+
+The important implementation detail:
+
+The `Updating budget` pill is **absolutely positioned** and therefore does not consume layout space.
+
+This fixed a previous issue where the dashboard content was pushed downward.
+
+## Approved layout behavior
+
+The `Updating budget` indicator:
+
+- Remains in the same pixel band as the top Home / Push controls.
+- Does not push the month selectors downward.
+- Does not push the dashboard content downward.
+- Uses the existing baby-pink theme.
+- Should not alter the arrow buttons' existing appearance.
+
+**Do not change the MonthNavigator geometry casually.**
+
+---
+
+# 12. PERFORMANCE — CURRENT DECISION
+
+The user tested the current cloud application and decided that month switching is **good enough for now**.
+
+No performance optimization is currently required.
+
+A performance improvement was proposed but deliberately skipped.
+
+## Saved trigger
+
+Say:
+
+```text
+Improve Budget Tracker Performance
+```
+
+and return the following exact deferred change.
+
+### File
+
+```text
+src/app/dashboard/page.tsx
+```
+
+### Current issue
+
+The `monthly_budget_heads` and `transfers` Supabase queries execute sequentially.
+
+They can be fetched concurrently using `Promise.all`.
+
+### Deferred replacement
+
+```tsx
+const [
+  monthlyHeadsResult,
+  transfersResult,
+] = await Promise.all([
+  supabase
+    .from("monthly_budget_heads")
+    .select(`
+      id,
+      budget_head_id,
+      allocated_amount,
+      carry_forward,
+      paid_amount,
+      budget_heads (
+        name,
+        head_type
+      )
+    `)
+    .eq("user_id", user.id)
+    .eq(
+      "monthly_budget_id",
+      monthlyBudget.id
+    )
+    .order("created_at", {
+      ascending: true,
+    }),
+
+  supabase
+    .from("transfers")
+    .select(
+      "id, source_monthly_head_id, destination_monthly_head_id, amount, created_at"
+    )
+    .eq("user_id", user.id)
+    .eq(
+      "monthly_budget_id",
+      monthlyBudget.id
+    )
+    .order("created_at", {
+      ascending: false,
+    }),
+]);
+
+const {
+  data: monthlyHeads,
+  error: monthlyHeadsError,
+} =
+  monthlyHeadsResult;
+
+if (monthlyHeadsError) {
+  throw new Error(
+    monthlyHeadsError.message
+  );
+}
+
+const {
+  data: transfers,
+  error: transfersError
+} =
+  transfersResult;
+
+if (transfersError) {
+  throw new Error(
+    transfersError.message
+  );
+}
+```
+
+**Do not apply this automatically.**
+
+Only return this change when the user asks for:
+
+> **Improve Budget Tracker Performance**
+
+---
+
+# 13. CURRENT FILE MAP
+
+## Login / Auth
+
+```text
+src/app/page.tsx
+src/lib/supabase/client.ts
+src/lib/supabase/server.ts
+src/lib/supabase/proxy.ts
+proxy.ts
+```
+
+## Home
+
+```text
+src/app/home/page.tsx
+src/app/home/LogoutButton.tsx
+```
+
+## Dashboard
+
+```text
+src/app/dashboard/page.tsx
+src/app/dashboard/actions.ts
+src/app/dashboard/MonthNavigator.tsx
+src/app/dashboard/HomeButton.tsx
+src/app/dashboard/loading.tsx
+```
+
+## Customize Budget
+
+```text
+src/app/customize-budget/page.tsx
+src/app/customize-budget/HomeButton.tsx
+src/app/customize-budget/loading.tsx
+```
+
+## Shared transition
+
+```text
+src/components/PageTransition.tsx
+```
+
+## Documentation
+
+```text
+PROJECT_SPEC.md
+CURRENT_STATE.md
+AI_INSTRUCTIONS.md
+```
+
+---
+
+# 14. GIT / DEPLOYMENT
+
+The project uses:
+
+```text
+main
+origin/main
+```
+
+Normal workflow:
+
+```powershell
+git status
+git add ...
+git commit -m "..."
+git push origin main
+```
+
+### PowerShell note
+
+Do **not** use `&` as a command separator.
+
+Use separate commands:
+
+```powershell
+git add ...
+git commit -m "..."
+git push origin main
+```
+
+Production build:
+
+```powershell
+npm run build
+```
+
+The build passed successfully after the latest navigation/loading changes.
+
+---
+
+# 15. LOCAL VS CLOUD DATABASE BEHAVIOR
+
+Important distinction:
+
+### Local code changes
+
+Changing code locally does **not** modify the cloud database.
+
+### Supabase dashboard changes
+
+Creating users or modifying database records through the Supabase dashboard changes the cloud database immediately, even if local code has not been pushed.
+
+### Code deployment
+
+Local code reaches the Vercel cloud application after:
+
+```text
+Local code
+  ↓
+Git commit
+  ↓
+Git push
+  ↓
+Vercel deployment
+  ↓
+Cloud application
+```
+
+---
+
+# 16. RECENT RESOLVED ISSUES
+
+## New-user salary
+
+### Problem
+
+New users could show ₹31,500 instead of ₹0.
+
+### Resolution
+
+New users now start with:
+
+```text
+₹0
+```
+
+### Status
+
+**RESOLVED**
+
+---
+
+## Historical month loading
+
+### Problem
+
+Historical months such as July 2026 showed:
+
+```text
+No budget exists for this historical month.
+```
+
+Then an attempted fix produced:
+
+```text
+Past months cannot be initialized automatically.
+```
+
+### Resolution
+
+Existing historical months are now loaded normally.
+
+Historical months are not automatically initialized.
+
+### Status
+
+**RESOLVED**
+
+---
+
+## MonthNavigator vertical displacement
+
+### Problem
+
+The new `Updating budget` indicator was inserted into normal layout flow and pushed the dashboard down.
+
+### Resolution
+
+The indicator is now absolutely positioned and does not consume layout space.
+
+### Status
+
+**RESOLVED**
+
+---
+
+## Login build syntax error
+
+### Problem
+
+`src/app/page.tsx` was missing a closing `}` for `handleLogin()`.
+
+### Resolution
+
+The file was corrected.
+
+```text
+npm run build
+```
+
+now passes.
+
+### Status
+
+**RESOLVED**
+
+---
+
+# 17. CURRENT APPROVED UX
+
+The following areas are explicitly considered correct:
+
+- MonthNavigator
+- Updating budget pill
+- Home → Dashboard transition
+- Personalized route loading screens
+- 2-second intentional transition
+- Baby-pink theme
+- Light-blue background
+- Current dashboard spacing
+- Existing arrow button appearance
+- Current page positioning
+
+**Do not redesign these areas unless the user explicitly requests it.**
+
+---
+
+# 18. CURRENT PROJECT STATUS
+
+```text
+Authentication                 COMPLETE
+Multi-user support             COMPLETE
+RLS isolation                  COMPLETE
+Home                           COMPLETE
+Dashboard                      COMPLETE
+Customize Budget               COMPLETE
+Monthly navigation             COMPLETE
+Manual carry-forward           COMPLETE
+Navigation UX                  COMPLETE
+Loading UX                     COMPLETE
+Production build               PASSING
+Performance optimization       DEFERRED
+```
+
+Current month switching is considered responsive enough.
+
+Do not optimize or redesign stable areas without explicit instruction.
+
+---
+
+# 19. FUTURE BACKLOG
+
+Existing ideas:
+
+- Question-mark/help button on each page
+- Current Account Balance card
+- Bank Account Tracker
+- Further budget-head fixes/refinements
+- Mobile UI refinements
+- Performance optimization if month switching becomes slow
+- Production audit
+
+---
+
+# 20. BANK ACCOUNT TRACKER — FUTURE
+
+The Bank Account Tracker is **not implemented yet**.
+
+Intended scope:
+
+### Included
+
+- Fixed Expense
+- Investment
+
+### Excluded
+
+- Saving
+- Other
+- Spending Pool
+- Salary
+
+Only actual paid amounts reduce the tracked bank balance.
+
+Concept:
+
+```text
+Starting Balance
++ Fixed Expense Allocation
++ Investment Allocation
+- Actual Paid Amount
+= Ending Balance
+```
+
+For subsequent months:
+
+```text
+Previous Ending Balance
++ Current Fixed Expense Allocation
++ Current Investment Allocation
+- Actual Paid Amount
+= Ending Balance
+```
+
+Historical months must remain protected.
+
+The detailed Bank Account implementation plan from the previous state document remains a future plan.
+
+---
+
+# 21. HARD CONSTRAINTS
+
+Do not:
+
+- Hard-code salary
+- Hard-code budget heads
+- Hard-code current allocations
+- Hard-code Spending Pool
+- Hard-code Daily Budget
+- Destroy historical records
+- Allow transfers greater than available balance
+- Expose another user's financial data
+- Expose Supabase service-role credentials
+- Introduce unnecessary features before core budgeting is stable
+
+Financial calculations remain centralized in application business logic.
+
+---
+
+# 22. NEW-CHAT HANDOFF
+
+Start a new chat with:
+
+```text
+Continue Budget Tracker.
+```
+
+This means:
+
+- Continue from this exact project state.
+- Use the current code/files as the source of truth.
+- Do not restart completed features.
+- Do not make the user repeat the project's history.
+- Preserve the approved UX unless the user explicitly asks for changes.
+- Treat this `CURRENT_STATE.md` as the project handoff document.
+
+## Important trigger 1
+
+```text
+Continue Budget Tracker.
+```
+
+Meaning:
+
+Continue from the latest known state of the Budget Tracker project, including:
+
+```text
+src/app/dashboard/actions.ts
+src/app/dashboard/page.tsx
+src/app/dashboard/MonthNavigator.tsx
+src/app/dashboard/HomeButton.tsx
+src/app/dashboard/loading.tsx
+
+src/app/home/page.tsx
+src/app/home/LogoutButton.tsx
+
+src/app/customize-budget/page.tsx
+src/app/customize-budget/HomeButton.tsx
+src/app/customize-budget/loading.tsx
+
+src/app/page.tsx
+
+src/components/PageTransition.tsx
+
+CURRENT_STATE.md
+PROJECT_SPEC.md
+AI_INSTRUCTIONS.md
+```
+
+Do not assume these files are identical to older versions. The latest local/project files are the source of truth.
+
+## Important trigger 2
+
+```text
+Improve Budget Tracker Performance
+```
+
+Meaning:
+
+Return the deferred `Promise.all()` optimization described in Section 12.
+
+Do not automatically implement it.
+
+---
+
+# 23. CURRENT VERDICT
+
+```text
+BUDGET TRACKER — STABLE CURRENT STATE
+```
+
+Core multi-user budgeting works.
+
+Navigation/loading UX works.
+
+Production build passes.
+
+Month switching is currently considered sufficiently responsive.
+
+Performance optimization is intentionally deferred.
+
+**Continue from here.**
