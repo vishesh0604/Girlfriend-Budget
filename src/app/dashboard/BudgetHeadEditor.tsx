@@ -28,6 +28,7 @@ type BudgetHeadEditorProps = {
   monthlyBudgetId: string;
   name: string;
   allocation: number;
+  carryForward: number;
   paidAmount: number;
   remaining: number;
   transferOptions: TransferOption[];
@@ -39,12 +40,16 @@ export default function BudgetHeadEditor({
   monthlyBudgetId,
   name,
   allocation,
+  carryForward,
   paidAmount,
   remaining,
   transferOptions,
   recentTransfer,
 }: BudgetHeadEditorProps) {
   const router = useRouter();
+
+  const totalAvailable =
+    allocation + remaining;
 
   const [editingAllocation, setEditingAllocation] =
     useState(false);
@@ -410,20 +415,18 @@ export default function BudgetHeadEditor({
               <input
                 type="number"
                 min="0"
-                max={allocation}
+                max={totalAvailable}
                 step="1"
                 value={paidValue}
                 onChange={(event) =>
-                  setPaidValue(
-                    event.target.value
-                  )
+                  setPaidValue(event.target.value)
                 }
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 font-medium outline-none focus:border-zinc-500"
               />
 
               <p className="mt-1 text-xs text-zinc-500">
                 Maximum: ₹
-                {allocation.toLocaleString(
+                {totalAvailable.toLocaleString(
                   "en-IN"
                 )}
               </p>

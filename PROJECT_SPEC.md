@@ -1,5 +1,12 @@
 # Ideas to Implement
-Question mmark button on each page
+Change in budget head amount; not reflecting in dashboard; add feature - change should not be possible if more than already paid value; change in type in customize budget head being reflected; change in amount not in any month, change should affect only current and future month, not past. Fix.
+Salary should go to future and present, not affect past
+Maximum of paid/used - Allocated + remaining; should update
+
+
+Update home ? to say site only accounts for fixed expenses, not daily spending
+Add ? for transfer edit undo
+Change mention of ? in /dashboard ?
 Proper Budget Tracker
 
 # Personal Budget App — Project Specification

@@ -11,7 +11,6 @@ export default function DeveloperLogsButton() {
     "Added Current Account Balance with a budget-head-level balance breakdown.",
     "Added the login page's decorative background design to home page.",
     "Added internal scrolling for long popups.",
-    
   ];
 
   return (
@@ -19,9 +18,27 @@ export default function DeveloperLogsButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center rounded-xl border border-[#d8c7e8] bg-[#eee4f7] px-4 py-2 text-sm font-medium text-[#76558f] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#e4d5f1] hover:shadow-md"
+        aria-label="Developer Logs"
+        title="Developer Logs"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8c7e8] bg-[#eee4f7] text-[#76558f] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#e4d5f1] hover:shadow-md"
       >
-        Developer Logs 
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M6 3h9l3 3v15H6z" />
+          <path d="M14 3v4h4" />
+          <path d="M9 11h6" />
+          <path d="M9 15h6" />
+          <path d="M9 19h4" />
+        </svg>
       </button>
 
       {open && (

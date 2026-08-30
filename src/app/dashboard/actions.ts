@@ -411,13 +411,16 @@ export async function updateMonthlyHeadPaidAmount(
     };
   }
 
+  /*
+   * Get the current budget head.
+   */
   const {
     data: monthlyHead,
     error: monthlyHeadError,
   } = await supabase
     .from("monthly_budget_heads")
     .select(
-      "allocated_amount, carry_forward"
+      "id, allocated_amount, carry_forward, paid_amount, monthly_budget_id"
     )
     .eq("id", monthlyHeadId)
     .eq("user_id", user.id)
@@ -435,6 +438,64 @@ export async function updateMonthlyHeadPaidAmount(
     };
   }
 
+  /*
+   * Load all transfers for the current
+   * monthly budget so that Remaining matches
+   * the balance displayed on the dashboard.
+   */
+  const {
+    data: transfers,
+    error: transfersError,
+  } = await supabase
+    .from("transfers")
+    .select(
+      "source_monthly_head_id, destination_monthly_head_id, amount"
+    )
+    .eq("user_id", user.id)
+    .eq(
+      "monthly_budget_id",
+      monthlyHead.monthly_budget_id
+    );
+
+  if (transfersError) {
+    return {
+      success: false,
+      error: transfersError.message,
+    };
+  }
+
+  /*
+   * Calculate transfers affecting this head.
+   */
+  const transfersOut = (
+    transfers ?? []
+  ).reduce((total, transfer) => {
+    if (
+      transfer.source_monthly_head_id !==
+      monthlyHeadId
+    ) {
+      return total;
+    }
+
+    return total + Number(transfer.amount);
+  }, 0);
+
+  const transfersIn = (
+    transfers ?? []
+  ).reduce((total, transfer) => {
+    if (
+      transfer.destination_monthly_head_id !==
+      monthlyHeadId
+    ) {
+      return total;
+    }
+
+    return total + Number(transfer.amount);
+  }, 0);
+
+  /*
+   * The existing balance before editing Paid / Used.
+   */
   const allocatedAmount = Number(
     monthlyHead.allocated_amount
   );
@@ -443,14 +504,40 @@ export async function updateMonthlyHeadPaidAmount(
     monthlyHead.carry_forward
   );
 
+  const currentPaidAmount = Number(
+    monthlyHead.paid_amount
+  );
+
   const totalAvailable =
     allocatedAmount + carryForward;
 
-  if (paidAmount > totalAvailable) {
+  const currentRemaining =
+    totalAvailable -
+    currentPaidAmount;
+
+  const currentFinalBalance =
+    currentRemaining -
+    transfersOut +
+    transfersIn;
+
+  /*
+   * Maximum Paid / Used follows the same rule
+   * displayed by BudgetHeadEditor:
+   *
+   * Maximum = Allocated + Remaining
+   *
+   * where Remaining is the current final balance
+   * after transfers.
+   */
+  const maximumPaidAmount =
+    allocatedAmount +
+    currentFinalBalance;
+
+  if (paidAmount > maximumPaidAmount) {
     return {
       success: false,
       error:
-        `Paid / Used amount cannot exceed the total available amount of ₹${totalAvailable.toLocaleString(
+        `Paid / Used amount cannot exceed the total available amount of ₹${maximumPaidAmount.toLocaleString(
           "en-IN"
         )}.`,
     };
