@@ -6,6 +6,8 @@ export default function DeveloperLogsButton() {
   const [open, setOpen] = useState(false);
 
   const changes = [
+    "Fixed Developer Logs Icon to not block other website content",
+    "Fixed [Paid/Used = Allocated+Transferred] logic",
     "Added all five contextual Help buttons '(?)' with shared popup behavior and location-specific descriptions.",
     "Added Developer Logs with a dedicated popup for tracking recent development changes.",
     "Added Current Account Balance with a budget-head-level balance breakdown.",
@@ -73,12 +75,12 @@ export default function DeveloperLogsButton() {
                         </p>
 
                         <p className="mt-1 text-xs text-[#647086]">
-                          13 August 2026
+                          31 August 2026
                         </p>
                       </div>
 
                       <span className="shrink-0 text-xs text-[#647086]">
-                        02:34 AM
+                        12:32 AM
                       </span>
                     </div>
 
