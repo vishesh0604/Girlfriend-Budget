@@ -5,6 +5,7 @@ import {
   calculateDailyBudget,
   calculateFinalBalance,
   calculateHeadState,
+  calculateMaximumPaidAmount,
   calculateRemaining,
   calculateCommittedAmount,
   calculateCommittedBreakdown,
@@ -92,6 +93,16 @@ describe("Budget calculations", () => {
     expect(
       calculateRemaining(3000, 425)
     ).toBe(2575);
+  });
+
+  it("limits Paid / Used to the amount already paid plus the current balance", () => {
+    expect(
+      calculateMaximumPaidAmount(425, 2575)
+    ).toBe(3000);
+
+    expect(
+      calculateMaximumPaidAmount(425, 3075)
+    ).toBe(3500);
   });
 
   it("calculates transfers out", () => {

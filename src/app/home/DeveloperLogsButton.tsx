@@ -6,13 +6,11 @@ export default function DeveloperLogsButton() {
   const [open, setOpen] = useState(false);
 
   const changes = [
+    "Fixed Budget Head not updating, and duplicacy of Paid/Used Value",
     "Fixed Developer Logs Icon to not block other website content",
     "Fixed [Paid/Used = Allocated+Transferred] logic",
     "Added all five contextual Help buttons '(?)' with shared popup behavior and location-specific descriptions.",
     "Added Developer Logs with a dedicated popup for tracking recent development changes.",
-    "Added Current Account Balance with a budget-head-level balance breakdown.",
-    "Added the login page's decorative background design to home page.",
-    "Added internal scrolling for long popups.",
   ];
 
   return (
@@ -75,7 +73,7 @@ export default function DeveloperLogsButton() {
                         </p>
 
                         <p className="mt-1 text-xs text-[#647086]">
-                          31 August 2026
+                          03 September 2026
                         </p>
                       </div>
 

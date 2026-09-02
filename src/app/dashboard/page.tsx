@@ -800,9 +800,6 @@ export default async function DashboardPage({
                     allocation={Number(
                       head.allocated_amount
                     )}
-                    carryForward={Number(
-                    head.carry_forward
-                  )}
                     paidAmount={Number(
                       head.paid_amount
                     )}

@@ -9,6 +9,7 @@ import {
   createTransfer,
   undoTransfer,
 } from "./actions";
+import { calculateMaximumPaidAmount } from "@/lib/supabase/budget/calculations";
 
 type TransferOption = {
   id: string;
@@ -28,7 +29,6 @@ type BudgetHeadEditorProps = {
   monthlyBudgetId: string;
   name: string;
   allocation: number;
-  carryForward: number;
   paidAmount: number;
   remaining: number;
   transferOptions: TransferOption[];
@@ -40,7 +40,6 @@ export default function BudgetHeadEditor({
   monthlyBudgetId,
   name,
   allocation,
-  carryForward,
   paidAmount,
   remaining,
   transferOptions,
@@ -48,8 +47,11 @@ export default function BudgetHeadEditor({
 }: BudgetHeadEditorProps) {
   const router = useRouter();
 
-  const totalAvailable =
-    allocation + remaining;
+  const maximumPaidAmount =
+    calculateMaximumPaidAmount(
+      paidAmount,
+      remaining
+    );
 
   const [editingAllocation, setEditingAllocation] =
     useState(false);
@@ -415,7 +417,7 @@ export default function BudgetHeadEditor({
               <input
                 type="number"
                 min="0"
-                max={totalAvailable}
+                max={maximumPaidAmount}
                 step="1"
                 value={paidValue}
                 onChange={(event) =>
@@ -426,7 +428,7 @@ export default function BudgetHeadEditor({
 
               <p className="mt-1 text-xs text-zinc-500">
                 Maximum: ₹
-                {totalAvailable.toLocaleString(
+                {maximumPaidAmount.toLocaleString(
                   "en-IN"
                 )}
               </p>

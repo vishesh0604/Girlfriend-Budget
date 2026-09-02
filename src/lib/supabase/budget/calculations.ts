@@ -54,6 +54,16 @@ export function calculateRemaining(
   );
 }
 
+export function calculateMaximumPaidAmount(
+  paidAmount: number | null | undefined,
+  remainingBalance: number | null | undefined
+): number {
+  return (
+    safeAmount(paidAmount) +
+    safeAmount(remainingBalance)
+  );
+}
+
 export function calculateTransfersOut(
   headId: string,
   transfers: TransferRecord[]

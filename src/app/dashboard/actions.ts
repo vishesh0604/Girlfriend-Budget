@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   calculateHeadState,
+  calculateMaximumPaidAmount,
   type TransferRecord,
 } from "@/lib/supabase/budget/calculations";
 
@@ -521,17 +522,16 @@ export async function updateMonthlyHeadPaidAmount(
     transfersIn;
 
   /*
-   * Maximum Paid / Used follows the same rule
-   * displayed by BudgetHeadEditor:
-   *
-   * Maximum = Allocated + Remaining
-   *
-   * where Remaining is the current final balance
-   * after transfers.
+   * A Paid / Used total may only consume the
+   * balance presently available to this head.
+   * This keeps transfers in and out in the
+   * limit without counting the allocation twice.
    */
   const maximumPaidAmount =
-    allocatedAmount +
-    currentFinalBalance;
+    calculateMaximumPaidAmount(
+      currentPaidAmount,
+      currentFinalBalance
+    );
 
   if (paidAmount > maximumPaidAmount) {
     return {
@@ -1787,6 +1787,55 @@ export async function updateBudgetHead(
       success: false,
       error: "Budget head could not be found.",
     };
+  }
+
+  const now = new Date();
+  const currentMonthStart =
+    `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  const {
+    data: currentAndFutureBudgets,
+    error: currentAndFutureBudgetsError,
+  } = await supabase
+    .from("monthly_budgets")
+    .select("id")
+    .eq("user_id", user.id)
+    .gte("month_start", currentMonthStart);
+
+  if (currentAndFutureBudgetsError) {
+    return {
+      success: false,
+      error: currentAndFutureBudgetsError.message,
+    };
+  }
+
+  const currentAndFutureBudgetIds = (
+    currentAndFutureBudgets ?? []
+  ).map((budget) => budget.id);
+
+  if (currentAndFutureBudgetIds.length > 0) {
+    const { error: updateMonthlyHeadsError } =
+      await supabase
+        .from("monthly_budget_heads")
+        .update({
+          allocated_amount: allocation,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id)
+        .eq("budget_head_id", budgetHeadId)
+        .in(
+          "monthly_budget_id",
+          currentAndFutureBudgetIds
+        );
+
+    if (updateMonthlyHeadsError) {
+      return {
+        success: false,
+        error: updateMonthlyHeadsError.message,
+      };
+    }
   }
 
   revalidatePath("/customize-budget");
