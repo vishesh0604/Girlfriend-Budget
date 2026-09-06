@@ -19,15 +19,27 @@ const MAX_CATEGORY_NAME_LENGTH = 40;
 const MAX_ENTRY_NOTE_LENGTH = 500;
 
 function isValidDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+  if (!match) {
     return false;
   }
 
-  const date = new Date(`${value}T00:00:00`);
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  // Verify the date is a real calendar day (rejects e.g. Feb 30).
+  // All arithmetic in UTC so the caller's timezone never matters.
+  const date = new Date(
+    Date.UTC(year, month - 1, day)
+  );
 
   return (
-    !Number.isNaN(date.getTime()) &&
-    date.toISOString().slice(0, 10) === value
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
   );
 }
 

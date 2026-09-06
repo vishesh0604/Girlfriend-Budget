@@ -378,10 +378,16 @@ export default async function DailySpendingPage({
     }))
     .sort((a, b) => b.amount - a.amount);
 
-  // Default date for the Add Expense form.
+  // Default date for the Add Expense form (local "today").
+  const localToday = `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}-${String(
+    now.getDate()
+  ).padStart(2, "0")}`;
+
   const defaultDate =
     monthStart === currentMonthStart
-      ? now.toISOString().slice(0, 10)
+      ? localToday
       : monthStart;
 
   const lastDayOfMonth = `${monthStart.slice(
