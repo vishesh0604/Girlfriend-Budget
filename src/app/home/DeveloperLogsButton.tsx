@@ -5,12 +5,18 @@ import { useState } from "react";
 export default function DeveloperLogsButton() {
   const [open, setOpen] = useState(false);
 
+  /*
+   * Developer Logs rotation rule:
+   * when new work is added, remove the bottom-most two entries
+   * and add the two newest entries at the top.
+   * This list stays at five entries.
+   */
   const changes = [
+    "Added a 'Pay in full' button and an editable Notes field to every budget-head card.",
+    "Renamed 'Transfer' to 'Move funds' across the app and made the budget-head cards more compact.",
     "Fixed Budget Head not updating, and duplicacy of Paid/Used Value",
     "Fixed Developer Logs Icon to not block other website content",
     "Fixed [Paid/Used = Allocated+Transferred] logic",
-    "Added all five contextual Help buttons '(?)' with shared popup behavior and location-specific descriptions.",
-    "Added Developer Logs with a dedicated popup for tracking recent development changes.",
   ];
 
   return (
@@ -73,7 +79,7 @@ export default function DeveloperLogsButton() {
                         </p>
 
                         <p className="mt-1 text-xs text-[#647086]">
-                          03 September 2026
+                          06 September 2026
                         </p>
                       </div>
 

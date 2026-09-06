@@ -567,6 +567,64 @@ export async function updateMonthlyHeadPaidAmount(
   };
 }
 
+export async function updateMonthlyHeadNote(
+  monthlyHeadId: string,
+  noteValue: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  if (!monthlyHeadId) {
+    return {
+      success: false,
+      error: "Budget head could not be identified.",
+    };
+  }
+
+  const note = noteValue.trim();
+
+  if (note.length > 2000) {
+    return {
+      success: false,
+      error:
+        "Note is too long. Please keep it under 2,000 characters.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("monthly_budget_heads")
+    .update({
+      note,
+      updated_at:
+        new Date().toISOString(),
+    })
+    .eq("id", monthlyHeadId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  revalidatePath("/dashboard");
+
+  return {
+    success: true,
+  };
+}
+
 export async function createTransfer(
   monthlyBudgetId: string,
   sourceMonthlyHeadId: string,
@@ -593,7 +651,7 @@ export async function createTransfer(
     return {
       success: false,
       error:
-        "A budget head cannot transfer money to itself.",
+        "A budget head cannot move funds to itself.",
     };
   }
 
@@ -605,7 +663,7 @@ export async function createTransfer(
     return {
       success: false,
       error:
-        "Transfer amount must be a valid number.",
+        "The amount to move must be a valid number.",
     };
   }
 
@@ -613,7 +671,7 @@ export async function createTransfer(
     return {
       success: false,
       error:
-        "Transfer amount must be greater than ₹0.",
+        "The amount to move must be greater than ₹0.",
     };
   }
 
@@ -717,7 +775,7 @@ export async function createTransfer(
     return {
       success: false,
       error:
-        `You can transfer a maximum of ₹${availableBalance.toLocaleString(
+        `You can move a maximum of ₹${availableBalance.toLocaleString(
           "en-IN"
         )}.`,
     };

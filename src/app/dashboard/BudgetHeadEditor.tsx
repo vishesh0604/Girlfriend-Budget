@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   updateMonthlyHeadAllocation,
   updateMonthlyHeadPaidAmount,
+  updateMonthlyHeadNote,
   createTransfer,
   undoTransfer,
 } from "./actions";
@@ -31,6 +32,7 @@ type BudgetHeadEditorProps = {
   allocation: number;
   paidAmount: number;
   remaining: number;
+  note: string;
   transferOptions: TransferOption[];
   recentTransfer?: RecentTransfer;
 };
@@ -42,6 +44,7 @@ export default function BudgetHeadEditor({
   allocation,
   paidAmount,
   remaining,
+  note,
   transferOptions,
   recentTransfer,
 }: BudgetHeadEditorProps) {
@@ -59,7 +62,16 @@ export default function BudgetHeadEditor({
   const [editingPaid, setEditingPaid] =
     useState(false);
 
+  const [payingInFull, setPayingInFull] =
+    useState(false);
+
   const [transferring, setTransferring] =
+    useState(false);
+
+  const [editingNote, setEditingNote] =
+    useState(false);
+
+  const [savingNote, setSavingNote] =
     useState(false);
 
   const [undoingTransfer, setUndoingTransfer] =
@@ -74,6 +86,9 @@ export default function BudgetHeadEditor({
   const [paidValue, setPaidValue] =
     useState(String(paidAmount));
 
+  const [noteValue, setNoteValue] =
+    useState(note);
+
   const [transferDestination, setTransferDestination] =
     useState("");
 
@@ -84,6 +99,12 @@ export default function BudgetHeadEditor({
     useState("");
 
   const [paidError, setPaidError] =
+    useState("");
+
+  const [payInFullError, setPayInFullError] =
+    useState("");
+
+  const [noteError, setNoteError] =
     useState("");
 
   const [transferError, setTransferError] =
@@ -172,6 +193,53 @@ export default function BudgetHeadEditor({
     setEditingPaid(false);
   }
 
+  async function handleNoteSave() {
+    setNoteError("");
+    setSavingNote(true);
+
+    const result =
+      await updateMonthlyHeadNote(
+        monthlyHeadId,
+        noteValue
+      );
+
+    if (!result.success) {
+      setNoteError(
+        result.error ??
+          "Unable to save note."
+      );
+      setSavingNote(false);
+      return;
+    }
+
+    setSavingNote(false);
+    setEditingNote(false);
+    router.refresh();
+  }
+
+  async function handlePayInFull() {
+    setPayInFullError("");
+    setPayingInFull(true);
+
+    const result =
+      await updateMonthlyHeadPaidAmount(
+        monthlyHeadId,
+        String(maximumPaidAmount)
+      );
+
+    if (!result.success) {
+      setPayInFullError(
+        result.error ??
+          "Unable to update paid amount."
+      );
+      setPayingInFull(false);
+      return;
+    }
+
+    setPayingInFull(false);
+    router.refresh();
+  }
+
   async function handleTransferSave() {
     setTransferError("");
 
@@ -184,7 +252,7 @@ export default function BudgetHeadEditor({
 
     if (!transferAmount) {
       setTransferError(
-        "Please enter a transfer amount."
+        "Please enter an amount to move."
       );
       return;
     }
@@ -199,7 +267,7 @@ export default function BudgetHeadEditor({
     if (!result.success) {
       setTransferError(
         result.error ??
-          "Unable to create transfer."
+          "Unable to move funds."
       );
       return;
     }
@@ -215,7 +283,7 @@ export default function BudgetHeadEditor({
     }
 
     const confirmed = window.confirm(
-      `Undo this transfer?\n\n₹${recentTransfer.amount.toLocaleString(
+      `Undo this fund move?\n\n₹${recentTransfer.amount.toLocaleString(
         "en-IN"
       )} ${
         recentTransfer.direction === "out"
@@ -239,7 +307,7 @@ export default function BudgetHeadEditor({
     if (!result.success) {
       setUndoError(
         result.error ??
-          "Unable to undo transfer."
+          "Unable to undo the fund move."
       );
       setUndoingTransfer(false);
       return;
@@ -263,13 +331,13 @@ export default function BudgetHeadEditor({
     }
 
     const confirmed = window.confirm(
-      `Clear this recent transfer from the card?\n\n₹${recentTransfer.amount.toLocaleString(
+      `Clear this recent move from the card?\n\n₹${recentTransfer.amount.toLocaleString(
         "en-IN"
       )} ${
         recentTransfer.direction === "out"
           ? `from ${name} to ${recentTransfer.otherHeadName}`
           : `from ${recentTransfer.otherHeadName} to ${name}`
-      }\n\nThe transfer itself will NOT be removed. Your balances and the summary card will remain unchanged.\n\nYou won't be able to restore this transfer information to this card after clearing it.`
+      }\n\nThe fund move itself will NOT be removed. Your balances and the summary card will remain unchanged.\n\nYou won't be able to restore this move information to this card after clearing it.`
     );
 
     if (!confirmed) {
@@ -306,7 +374,7 @@ export default function BudgetHeadEditor({
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
         {/* Allocated */}
         <div>
           <div className="flex items-center justify-between gap-2">
@@ -486,18 +554,46 @@ export default function BudgetHeadEditor({
             )}
           </p>
         </div>
+
+        {/* Pay in full */}
+        <div className="flex flex-col items-end justify-start">
+          {!editingPaid && (
+            <>
+              <button
+                type="button"
+                onClick={handlePayInFull}
+                disabled={
+                  payingInFull ||
+                  remaining <= 0
+                }
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+              >
+                {payingInFull
+                  ? "Paying..."
+                  : "Pay in full"}
+              </button>
+
+              {payInFullError && (
+                <p className="mt-2 text-right text-xs text-red-600">
+                  {payInFullError}
+                </p>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Recent Transfer */}
-      <div className="mt-5 border-t border-zinc-100 pt-4">
+      {/* Recent Move */}
+      <div className="mt-3 border-t border-zinc-100 pt-3">
         <p className="text-xs font-medium text-zinc-500">
-          Recent Transfer
+          Recent Moves
         </p>
 
+        <div className="mt-1.5 rounded-md bg-zinc-100 px-2.5 py-1.5">
         {recentTransfer &&
         !recentTransferHidden ? (
           <>
-            <div className="mt-1 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div className="flex min-w-0 items-center gap-2 text-sm">
                 <span className="font-semibold">
                   {recentTransfer.direction ===
@@ -553,14 +649,15 @@ export default function BudgetHeadEditor({
             )}
           </>
         ) : (
-          <p className="mt-1 text-sm text-zinc-400">
-            No recent transfer
+          <p className="text-sm text-zinc-400">
+            No recent moves
           </p>
         )}
+        </div>
       </div>
 
-      {/* Transfer */}
-      <div className="mt-5 border-t border-zinc-100 pt-4">
+      {/* Move funds */}
+      <div className="mt-3 border-t border-zinc-100 pt-3">
         {!transferring ? (
           <button
             type="button"
@@ -574,14 +671,14 @@ export default function BudgetHeadEditor({
               transferOptions.length === 0 ||
               remaining <= 0
             }
-            className="text-sm font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
+            className="rounded-lg border border-[#d8c7e8] bg-[#eee4f7] px-3.5 py-2 text-sm font-medium text-[#76558f] transition hover:bg-[#e4d5f1] disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
           >
-            Transfer
+            Move funds
           </button>
         ) : (
           <div>
             <p className="text-sm font-medium">
-              Transfer from {name}
+              Move funds from {name}
             </p>
 
             <div className="mt-3 space-y-3">
@@ -651,7 +748,7 @@ export default function BudgetHeadEditor({
                 onClick={handleTransferSave}
                 className="rounded-lg bg-zinc-950 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800"
               >
-                Transfer
+                Move funds
               </button>
 
               <button
@@ -666,6 +763,91 @@ export default function BudgetHeadEditor({
             {transferError && (
               <p className="mt-2 text-xs text-red-600">
                 {transferError}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Notes */}
+      <div className="mt-3 border-t border-zinc-100 pt-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-medium text-zinc-500">
+            Notes
+          </p>
+
+          {!editingNote && (
+            <button
+              type="button"
+              onClick={() => {
+                setNoteValue(note);
+                setNoteError("");
+                setEditingNote(true);
+              }}
+              className="text-xs font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-950"
+            >
+              {note.trim()
+                ? "Edit"
+                : "Add note"}
+            </button>
+          )}
+        </div>
+
+        {editingNote ? (
+          <div className="mt-2">
+            <textarea
+              rows={3}
+              value={noteValue}
+              onChange={(event) =>
+                setNoteValue(
+                  event.target.value
+                )
+              }
+              placeholder="Add details about this payment..."
+              className="w-full resize-y rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            />
+
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={handleNoteSave}
+                disabled={savingNote}
+                className="rounded-lg bg-zinc-950 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+              >
+                {savingNote
+                  ? "Saving..."
+                  : "Save"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setNoteValue(note);
+                  setNoteError("");
+                  setEditingNote(false);
+                }}
+                disabled={savingNote}
+                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {noteError && (
+              <p className="mt-2 text-xs text-red-600">
+                {noteError}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="mt-1.5 rounded-md bg-zinc-100 px-2.5 py-1.5">
+            {note.trim() ? (
+              <p className="whitespace-pre-wrap break-words text-sm text-zinc-700">
+                {note}
+              </p>
+            ) : (
+              <p className="text-sm text-zinc-400">
+                No notes
               </p>
             )}
           </div>

@@ -144,21 +144,21 @@ export function validateTransfer(
   if (sourceHeadId === destinationHeadId) {
     return {
       valid: false,
-      error: "A budget head cannot transfer money to itself.",
+      error: "A budget head cannot move funds to itself.",
     };
   }
 
   if (transferAmount <= 0) {
     return {
       valid: false,
-      error: "Transfer amount must be greater than ₹0.",
+      error: "The amount to move must be greater than ₹0.",
     };
   }
 
   if (transferAmount > available) {
     return {
       valid: false,
-      error: `You can transfer a maximum of ₹${available.toLocaleString(
+      error: `You can move a maximum of ₹${available.toLocaleString(
         "en-IN"
       )}.`,
     };

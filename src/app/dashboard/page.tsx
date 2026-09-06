@@ -257,6 +257,7 @@ export default async function DashboardPage({
       allocated_amount,
       carry_forward,
       paid_amount,
+      note,
       budget_heads (
         name,
         head_type
@@ -613,7 +614,7 @@ export default async function DashboardPage({
             </p>
             <p className="mt-1">
                 Each budget head shows its allocation, paid/used amount,
-                transfers, and current remaining balance. The remaining balance
+                fund moves, and current remaining balance. The remaining balance
                 is updated as you make changes.
             </p>
             </div>
@@ -635,7 +636,7 @@ export default async function DashboardPage({
             </p>
             <p className="mt-1">
                 Shows the remaining balance of each budget head after payments,
-                usage, and transfers. It has its own ? for more information.
+                usage, and fund moves. It has its own ? for more information.
             </p>
             </div>
         </div>
@@ -806,6 +807,7 @@ export default async function DashboardPage({
                     remaining={
                       head.state.finalBalance
                     }
+                    note={head.note ?? ""}
                     transferOptions={
                       transferOptions
                     }
@@ -827,7 +829,7 @@ export default async function DashboardPage({
                 </h2>
 
                 <p className="mt-0.5 text-xs text-zinc-500">
-                  After Paid / Used and transfers
+                  After Paid / Used and fund moves
                 </p>
               </div>
             </div>
@@ -854,7 +856,7 @@ export default async function DashboardPage({
             <div className="mt-4 border-t border-zinc-100 pt-3">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                 <span className="text-zinc-500">
-                  Latest Transfer
+                  Latest Move
                 </span>
 
                 {latestTransfer &&
@@ -885,7 +887,7 @@ export default async function DashboardPage({
                   </>
                 ) : (
                   <span className="text-zinc-400">
-                    No transfers yet
+                    No moves yet
                   </span>
                 )}
               </div>
@@ -932,7 +934,7 @@ export default async function DashboardPage({
             Your Current Account Balance is the total amount
             currently remaining across all your budget heads.
             It represents the money that is still available
-            after your spending, payments, and transfers.
+            after your spending, payments, and fund moves.
           </p>
         </div>
 
@@ -963,7 +965,7 @@ export default async function DashboardPage({
     </div>
 
     <p className="mt-0.5 text-xs text-zinc-500">
-      After Paid / Used and transfers
+      After Paid / Used and fund moves
     </p>
   </div>
 </div>

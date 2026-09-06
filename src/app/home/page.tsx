@@ -58,7 +58,7 @@ export default async function HomePage() {
                     Your monthly budget overview. Open it to see your
                     salary, committed expenses, spending pool, daily
                     budget, and all your budget heads with their
-                    allocations, payments, transfers, and remaining
+                    allocations, payments, fund moves, and remaining
                     balances.
                   </p>
                 </div>

@@ -1,13 +1,30 @@
-# Ideas to Implement
-Change in budget head amount; not reflecting in dashboard; add feature - change should not be possible if more than already paid value; change in type in customize budget head being reflected; change in amount not in any month, change should affect only current and future month, not past. Fix.
-Salary should go to future and present, not affect past
-Maximum of paid/used - Allocated + remaining; should update
+# Working Notes
 
+This section is a running to-do / done list for small changes.
+The 50 numbered sections below are the product specification.
+CURRENT_STATE.md holds the detailed implementation status.
 
-Update home ? to say site only accounts for fixed expenses, not daily spending
-Add ? for transfer edit undo
-Change mention of ? in /dashboard ?
-Proper Budget Tracker
+## Done
+
+- Budget-head allocation edits now reflect on the dashboard and only
+  affect the current and future months, never past months.
+- Paid / Used is capped at Allocated + carry-forward + moves in, and the
+  cap updates as balances change.
+- "Pay in full" button on each budget-head card: sets Paid / Used so the
+  remaining balance drops to zero.
+- Editable Notes field on each budget-head card, saved per head per month.
+- Renamed "Transfer" to "Move funds" across the whole app (button, form,
+  history section, help text, error messages).
+- Tightened the budget-head card layout so the cards are more compact.
+
+## To Do
+
+- Salary changes should apply to the current and future months only, not
+  past months.
+- Update the /home help "?" to say the site only accounts for fixed
+  monthly expenses, not day-to-day spending.
+- Add a help note / undo affordance for editing a fund move.
+- Revisit the wording of the /dashboard help "?".
 
 # Personal Budget App — Project Specification
 
@@ -1180,13 +1197,22 @@ If the user changes a requirement:
 # 47. CURRENT STATUS
 
 Status:
-Planning
+Built and in active use.
 
-No production implementation has started yet.
+The application is implemented and deployed on Vercel with a Supabase
+backend. Authentication, multi-user isolation, budget heads, monthly
+budgets, monthly navigation, historical months, manual carry-forward
+(Push Remaining), fund moves, per-head notes, salary editing, the
+Customize Budget page, Current Account Balance, and the contextual help
+system are all working. The production build passes.
+
+CURRENT_STATE.md is the implementation source of truth and holds the
+detailed, up-to-date status. This file remains the product source of
+truth.
 
 Next step:
 
-Define the technical architecture and initialize the VS Code project.
+Work through the To Do list in the Working Notes at the top of this file.
 
 ---
 
