@@ -132,6 +132,44 @@ export function calculateDailyBudget(
   return pool / days;
 }
 
+/*
+ * Daily Spending Tracker (see PROJECT_SPEC.md section 51).
+ * These operate on the discretionary spending pool only and
+ * never touch the fixed-expense calculations above.
+ */
+
+export function calculateTotalSpent(
+  entries: Array<{ amount?: number | null }>
+): number {
+  return entries.reduce(
+    (total, entry) =>
+      total + safeAmount(entry.amount),
+    0
+  );
+}
+
+export function calculateSpendingAvailable(
+  spendingPool: number | null | undefined,
+  carriedIn: number | null | undefined
+): number {
+  return (
+    safeAmount(spendingPool) +
+    safeAmount(carriedIn)
+  );
+}
+
+export function calculateSpendingRemaining(
+  spendingAvailable: number | null | undefined,
+  totalSpent: number | null | undefined,
+  movedOut: number | null | undefined
+): number {
+  return (
+    safeAmount(spendingAvailable) -
+    safeAmount(totalSpent) -
+    safeAmount(movedOut)
+  );
+}
+
 export function validateTransfer(
   amount: number | null | undefined,
   availableBalance: number | null | undefined,

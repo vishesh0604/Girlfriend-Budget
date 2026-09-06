@@ -16,6 +16,21 @@ const FALLBACK_CATEGORY_NAME = "Miscellaneous";
 
 const MAX_CATEGORY_NAME_LENGTH = 40;
 
+const MAX_ENTRY_NOTE_LENGTH = 500;
+
+function isValidDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+
+  return (
+    !Number.isNaN(date.getTime()) &&
+    date.toISOString().slice(0, 10) === value
+  );
+}
+
 /*
  * Seed the seven starter categories the first time a user
  * opens the Daily Spending Tracker. "Miscellaneous" is the
@@ -340,6 +355,228 @@ export async function deleteSpendingCategory(
     return {
       success: false,
       error: deleteError.message,
+    };
+  }
+
+  revalidatePath("/daily-spending");
+
+  return { success: true };
+}
+
+type SpendingEntryInput = {
+  entryDate: string;
+  categoryId: string;
+  amountValue: string;
+  note: string;
+};
+
+async function validateSpendingEntryInput(
+  supabase: Awaited<
+    ReturnType<typeof createClient>
+  >,
+  userId: string,
+  input: SpendingEntryInput
+) {
+  if (!isValidDate(input.entryDate)) {
+    return {
+      error: "Please choose a valid date.",
+    };
+  }
+
+  const amount = Number(input.amountValue);
+
+  if (!Number.isFinite(amount)) {
+    return {
+      error: "Amount must be a valid number.",
+    };
+  }
+
+  if (amount <= 0) {
+    return {
+      error: "Amount must be greater than ₹0.",
+    };
+  }
+
+  const note = input.note.trim();
+
+  if (note.length > MAX_ENTRY_NOTE_LENGTH) {
+    return {
+      error: `Note must be ${MAX_ENTRY_NOTE_LENGTH} characters or fewer.`,
+    };
+  }
+
+  const {
+    data: category,
+    error: categoryError,
+  } = await supabase
+    .from("spending_categories")
+    .select("id")
+    .eq("id", input.categoryId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (categoryError) {
+    return { error: categoryError.message };
+  }
+
+  if (!category) {
+    return {
+      error: "Please choose a valid category.",
+    };
+  }
+
+  return {
+    value: {
+      entry_date: input.entryDate,
+      category_id: input.categoryId,
+      amount,
+      note,
+    },
+  };
+}
+
+export async function createSpendingEntry(
+  entryDate: string,
+  categoryId: string,
+  amountValue: string,
+  note: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const validation =
+    await validateSpendingEntryInput(
+      supabase,
+      user.id,
+      { entryDate, categoryId, amountValue, note }
+    );
+
+  if (!validation.value) {
+    return {
+      success: false,
+      error: validation.error,
+    };
+  }
+
+  const { error } = await supabase
+    .from("spending_entries")
+    .insert({
+      user_id: user.id,
+      ...validation.value,
+    });
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  revalidatePath("/daily-spending");
+
+  return { success: true };
+}
+
+export async function updateSpendingEntry(
+  entryId: string,
+  entryDate: string,
+  categoryId: string,
+  amountValue: string,
+  note: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const validation =
+    await validateSpendingEntryInput(
+      supabase,
+      user.id,
+      { entryDate, categoryId, amountValue, note }
+    );
+
+  if (!validation.value) {
+    return {
+      success: false,
+      error: validation.error,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("spending_entries")
+    .update({
+      ...validation.value,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", entryId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      error: "This expense could not be found.",
+    };
+  }
+
+  revalidatePath("/daily-spending");
+
+  return { success: true };
+}
+
+export async function deleteSpendingEntry(
+  entryId: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("spending_entries")
+    .delete()
+    .eq("id", entryId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
     };
   }
 

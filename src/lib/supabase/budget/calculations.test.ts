@@ -10,7 +10,10 @@ import {
   calculateCommittedAmount,
   calculateCommittedBreakdown,
   calculateSpendingPool,
+  calculateSpendingAvailable,
+  calculateSpendingRemaining,
   calculateTotalAvailable,
+  calculateTotalSpent,
   calculateTransfersIn,
   calculateTransfersOut,
   validateTransfer,
@@ -276,5 +279,33 @@ describe("Budget calculations", () => {
     expect(state.transfersIn).toBe(0);
     expect(state.finalBalance).toBe(2575);
     expect(state.carryForward).toBe(2575);
+  });
+
+  it("sums logged spending, ignoring blanks", () => {
+    expect(
+      calculateTotalSpent([
+        { amount: 400 },
+        { amount: 200 },
+        { amount: null },
+        { amount: 100 },
+      ])
+    ).toBe(700);
+  });
+
+  it("computes spending remaining from pool, carry-in, spent and moved-out", () => {
+    const available = calculateSpendingAvailable(
+      15000,
+      1000
+    );
+
+    expect(available).toBe(16000);
+
+    expect(
+      calculateSpendingRemaining(
+        available,
+        700,
+        2000
+      )
+    ).toBe(13300);
   });
 });

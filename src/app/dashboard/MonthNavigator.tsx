@@ -5,6 +5,7 @@ import { useTransition } from "react";
 
 type MonthNavigatorProps = {
   monthStart: string;
+  basePath?: string;
 };
 
 const months = [
@@ -82,6 +83,7 @@ function LoadingDots() {
 
 export default function MonthNavigator({
   monthStart,
+  basePath = "/dashboard",
 }: MonthNavigatorProps) {
   const router = useRouter();
 
@@ -115,7 +117,7 @@ export default function MonthNavigator({
 
     startTransition(() => {
       router.push(
-        `/dashboard?month=${targetMonth}`
+        `${basePath}?month=${targetMonth}`
       );
     });
   }
