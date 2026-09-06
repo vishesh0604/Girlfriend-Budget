@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import ActivityToast from "@/components/ActivityToast";
 import { createSpendingEntry } from "./actions";
+import {
+  MONTH_NAMES,
+  ordinalDay,
+  buildEntryDate,
+} from "./dateHelpers";
 
 type CategoryOption = {
   id: string;
@@ -12,24 +18,41 @@ type CategoryOption = {
 
 type AddExpenseButtonProps = {
   categories: CategoryOption[];
-  defaultDate: string;
-  minDate: string;
-  maxDate: string;
+  monthStart: string;
+  daysInMonth: number;
+  defaultDay: number;
 };
 
 export default function AddExpenseButton({
   categories,
-  defaultDate,
-  minDate,
-  maxDate,
+  monthStart,
+  daysInMonth,
+  defaultDay,
 }: AddExpenseButtonProps) {
   const router = useRouter();
+
+  const [isRefreshing, startTransition] =
+    useTransition();
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [date, setDate] = useState(defaultDate);
+  const busy = saving || isRefreshing;
+
+  const monthLabel =
+    MONTH_NAMES[
+      Number(monthStart.slice(5, 7)) - 1
+    ] ?? "";
+
+  const dayOptions = Array.from(
+    { length: daysInMonth },
+    (_, index) => index + 1
+  );
+
+  const [day, setDay] = useState(
+    String(defaultDay)
+  );
   const [categoryId, setCategoryId] = useState(
     categories[0]?.id ?? ""
   );
@@ -37,7 +60,7 @@ export default function AddExpenseButton({
   const [note, setNote] = useState("");
 
   function handleOpen() {
-    setDate(defaultDate);
+    setDay(String(defaultDay));
     setCategoryId(categories[0]?.id ?? "");
     setAmount("");
     setNote("");
@@ -46,7 +69,7 @@ export default function AddExpenseButton({
   }
 
   function handleClose() {
-    if (saving) {
+    if (busy) {
       return;
     }
 
@@ -58,7 +81,10 @@ export default function AddExpenseButton({
     setSaving(true);
 
     const result = await createSpendingEntry(
-      date,
+      buildEntryDate(
+        monthStart,
+        Number(day)
+      ),
       categoryId,
       amount,
       note
@@ -75,11 +101,19 @@ export default function AddExpenseButton({
 
     setSaving(false);
     setOpen(false);
-    router.refresh();
+
+    startTransition(() => {
+      router.refresh();
+    });
   }
 
   return (
     <>
+      <ActivityToast
+        show={busy}
+        label="Adding expense..."
+      />
+
       <button
         type="button"
         onClick={handleOpen}
@@ -107,19 +141,26 @@ export default function AddExpenseButton({
             <div className="mt-4 space-y-3">
               <div>
                 <label className="text-xs font-medium text-[#647086]">
-                  Date
+                  Day of {monthLabel}
                 </label>
 
-                <input
-                  type="date"
-                  value={date}
-                  min={minDate}
-                  max={maxDate}
+                <select
+                  value={day}
                   onChange={(event) =>
-                    setDate(event.target.value)
+                    setDay(event.target.value)
                   }
                   className="mt-1 w-full rounded-lg border border-[#c9ddea] bg-[#f8fcff] px-3 py-2 text-sm outline-none focus:border-[#4f8fbd]"
-                />
+                >
+                  {dayOptions.map((option) => (
+                    <option
+                      key={option}
+                      value={option}
+                    >
+                      {ordinalDay(option)}{" "}
+                      {monthLabel}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -192,7 +233,7 @@ export default function AddExpenseButton({
               <button
                 type="button"
                 onClick={handleClose}
-                disabled={saving}
+                disabled={busy}
                 className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0] disabled:cursor-not-allowed disabled:text-zinc-400"
               >
                 Cancel
@@ -202,7 +243,7 @@ export default function AddExpenseButton({
                 type="button"
                 onClick={handleSave}
                 disabled={
-                  saving ||
+                  busy ||
                   !amount.trim() ||
                   !categoryId
                 }

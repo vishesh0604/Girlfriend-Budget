@@ -1,13 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import ConfirmDialog from "@/components/ConfirmDialog";
+import ActivityToast from "@/components/ActivityToast";
 import {
   updateSpendingEntry,
   deleteSpendingEntry,
 } from "./actions";
+import {
+  MONTH_NAMES,
+  ordinalDay,
+  formatEntryDate,
+  dayFromEntryDate,
+  buildEntryDate,
+} from "./dateHelpers";
 
 type CategoryOption = {
   id: string;
@@ -26,8 +34,8 @@ type SpendingEntry = {
 type SpendingEntryRowProps = {
   entry: SpendingEntry;
   categories: CategoryOption[];
-  minDate: string;
-  maxDate: string;
+  monthStart: string;
+  daysInMonth: number;
 };
 
 function formatCurrency(amount: number) {
@@ -36,22 +44,16 @@ function formatCurrency(amount: number) {
   })}`;
 }
 
-function formatDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-  });
-}
-
 export default function SpendingEntryRow({
   entry,
   categories,
-  minDate,
-  maxDate,
+  monthStart,
+  daysInMonth,
 }: SpendingEntryRowProps) {
   const router = useRouter();
+
+  const [isRefreshing, startTransition] =
+    useTransition();
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -61,8 +63,24 @@ export default function SpendingEntryRow({
     useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const [date, setDate] = useState(
-    entry.entryDate
+  const [busyLabel, setBusyLabel] =
+    useState("");
+
+  const showToast =
+    saving || deleting || isRefreshing;
+
+  const monthLabel =
+    MONTH_NAMES[
+      Number(monthStart.slice(5, 7)) - 1
+    ] ?? "";
+
+  const dayOptions = Array.from(
+    { length: daysInMonth },
+    (_, index) => index + 1
+  );
+
+  const [day, setDay] = useState(
+    String(dayFromEntryDate(entry.entryDate))
   );
   const [categoryId, setCategoryId] = useState(
     entry.categoryId
@@ -73,7 +91,11 @@ export default function SpendingEntryRow({
   const [note, setNote] = useState(entry.note);
 
   function startEdit() {
-    setDate(entry.entryDate);
+    setDay(
+      String(
+        dayFromEntryDate(entry.entryDate)
+      )
+    );
     setCategoryId(entry.categoryId);
     setAmount(String(entry.amount));
     setNote(entry.note);
@@ -83,11 +105,15 @@ export default function SpendingEntryRow({
 
   async function handleSave() {
     setError("");
+    setBusyLabel("Saving expense...");
     setSaving(true);
 
     const result = await updateSpendingEntry(
       entry.id,
-      date,
+      buildEntryDate(
+        monthStart,
+        Number(day)
+      ),
       categoryId,
       amount,
       note
@@ -104,10 +130,14 @@ export default function SpendingEntryRow({
 
     setSaving(false);
     setEditing(false);
-    router.refresh();
+
+    startTransition(() => {
+      router.refresh();
+    });
   }
 
   async function handleDelete() {
+    setBusyLabel("Deleting expense...");
     setDeleting(true);
 
     const result = await deleteSpendingEntry(
@@ -126,23 +156,37 @@ export default function SpendingEntryRow({
 
     setDeleting(false);
     setConfirmOpen(false);
-    router.refresh();
+
+    startTransition(() => {
+      router.refresh();
+    });
   }
 
   if (editing) {
     return (
       <div className="rounded-xl border border-[#f3b9cd] bg-[#ffe8f0] p-3">
+        <ActivityToast
+          show={showToast}
+          label={busyLabel}
+        />
+
         <div className="grid gap-2 sm:grid-cols-2">
-          <input
-            type="date"
-            value={date}
-            min={minDate}
-            max={maxDate}
+          <select
+            value={day}
             onChange={(event) =>
-              setDate(event.target.value)
+              setDay(event.target.value)
             }
             className="w-full rounded-lg border border-[#c9ddea] bg-[#f8fcff] px-3 py-2 text-sm outline-none focus:border-[#4f8fbd]"
-          />
+          >
+            {dayOptions.map((option) => (
+              <option
+                key={option}
+                value={option}
+              >
+                {ordinalDay(option)} {monthLabel}
+              </option>
+            ))}
+          </select>
 
           <select
             value={categoryId}
@@ -215,10 +259,15 @@ export default function SpendingEntryRow({
 
   return (
     <>
+      <ActivityToast
+        show={showToast}
+        label={busyLabel}
+      />
+
       <div className="flex items-center justify-between gap-3 rounded-xl border border-[#f3b9cd] bg-[#ffe8f0] px-3 py-2.5">
         <div className="flex min-w-0 items-baseline gap-2">
           <span className="shrink-0 text-xs text-[#647086]">
-            {formatDate(entry.entryDate)}
+            {formatEntryDate(entry.entryDate)}
           </span>
 
           <span className="shrink-0 rounded-full bg-[#cfeeff] px-2 py-0.5 text-[10px] font-medium text-[#3978a5]">

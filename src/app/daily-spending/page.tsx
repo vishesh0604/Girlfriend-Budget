@@ -378,22 +378,13 @@ export default async function DailySpendingPage({
     }))
     .sort((a, b) => b.amount - a.amount);
 
-  // Default date for the Add Expense form (local "today").
-  const localToday = `${now.getFullYear()}-${String(
-    now.getMonth() + 1
-  ).padStart(2, "0")}-${String(
-    now.getDate()
-  ).padStart(2, "0")}`;
-
-  const defaultDate =
+  // Expenses always fall inside the month being viewed, so the
+  // Add/Edit forms only pick a day of that month. Default to today
+  // for the current month, otherwise the 1st.
+  const defaultDay =
     monthStart === currentMonthStart
-      ? localToday
-      : monthStart;
-
-  const lastDayOfMonth = `${monthStart.slice(
-    0,
-    8
-  )}${String(daysInMonth).padStart(2, "0")}`;
+      ? now.getDate()
+      : 1;
 
   return (
     <main className="min-h-screen bg-[#e5f6ff] px-4 py-8 text-zinc-950">
@@ -410,9 +401,9 @@ export default async function DailySpendingPage({
 
             <AddExpenseButton
               categories={categoryOptions}
-              defaultDate={defaultDate}
-              minDate={monthStart}
-              maxDate={lastDayOfMonth}
+              monthStart={monthStart}
+              daysInMonth={daysInMonth}
+              defaultDay={defaultDay}
             />
           </div>
         </div>
@@ -528,8 +519,8 @@ export default async function DailySpendingPage({
                   key={entry.id}
                   entry={entry}
                   categories={categoryOptions}
-                  minDate={monthStart}
-                  maxDate={lastDayOfMonth}
+                  monthStart={monthStart}
+                  daysInMonth={daysInMonth}
                 />
               ))}
             </div>
