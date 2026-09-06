@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useRefresh } from "@/components/RefreshProvider";
+
 import {
   createBudgetHead,
   updateBudgetHead,
@@ -38,6 +40,7 @@ export default function BudgetHeadForm({
   isActive = true,
 }: Props) {
   const router = useRouter();
+  const { runRefresh } = useRefresh();
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -115,7 +118,7 @@ export default function BudgetHeadForm({
       setAllocation("");
     }
 
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handleDeactivate() {
@@ -142,7 +145,7 @@ export default function BudgetHeadForm({
     }
 
     setIsSaving(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handleActivate() {
@@ -168,7 +171,7 @@ export default function BudgetHeadForm({
     }
 
     setIsSaving(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handleDelete() {
@@ -195,7 +198,7 @@ export default function BudgetHeadForm({
     }
 
     setIsSaving(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   /*

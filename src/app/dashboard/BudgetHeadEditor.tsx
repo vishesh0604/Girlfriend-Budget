@@ -12,6 +12,7 @@ import {
 } from "./actions";
 import { calculateMaximumPaidAmount } from "@/lib/supabase/budget/calculations";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useRefresh } from "@/components/RefreshProvider";
 
 type TransferOption = {
   id: string;
@@ -50,6 +51,7 @@ export default function BudgetHeadEditor({
   recentTransfer,
 }: BudgetHeadEditorProps) {
   const router = useRouter();
+  const { runRefresh } = useRefresh();
 
   const maximumPaidAmount =
     calculateMaximumPaidAmount(
@@ -178,7 +180,7 @@ export default function BudgetHeadEditor({
     }
 
     setEditingAllocation(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handlePaidSave() {
@@ -199,7 +201,7 @@ export default function BudgetHeadEditor({
     }
 
     setEditingPaid(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handleNoteSave() {
@@ -223,7 +225,7 @@ export default function BudgetHeadEditor({
 
     setSavingNote(false);
     setEditingNote(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handlePayInFull() {
@@ -246,7 +248,7 @@ export default function BudgetHeadEditor({
     }
 
     setPayingInFull(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handleTransferSave() {
@@ -284,7 +286,7 @@ export default function BudgetHeadEditor({
     setTransferAmount("");
     setTransferDestination("");
     setTransferring(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handleUndoTransfer() {
@@ -319,7 +321,7 @@ export default function BudgetHeadEditor({
      * user to manually refresh the browser.
      */
     setUndoingTransfer(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   function handleClearRecentTransfer() {

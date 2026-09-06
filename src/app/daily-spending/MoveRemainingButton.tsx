@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import ActivityToast from "@/components/ActivityToast";
+import { useRefresh } from "@/components/RefreshProvider";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   createSpendingMove,
@@ -44,8 +44,8 @@ export default function MoveRemainingButton({
 }: MoveRemainingButtonProps) {
   const router = useRouter();
 
-  const [isRefreshing, startTransition] =
-    useTransition();
+  const { refreshing, runRefresh } =
+    useRefresh();
 
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -59,7 +59,7 @@ export default function MoveRemainingButton({
     useState<ExistingMove | null>(null);
   const [undoing, setUndoing] = useState(false);
 
-  const busy = saving || undoing || isRefreshing;
+  const busy = saving || undoing || refreshing;
 
   function handleOpen() {
     setOpen(true);
@@ -104,7 +104,7 @@ export default function MoveRemainingButton({
     setSaving(false);
     setAmount("");
 
-    startTransition(() => {
+    runRefresh(() => {
       router.refresh();
     });
   }
@@ -133,7 +133,7 @@ export default function MoveRemainingButton({
     setUndoing(false);
     setUndoTarget(null);
 
-    startTransition(() => {
+    runRefresh(() => {
       router.refresh();
     });
   }
@@ -274,7 +274,11 @@ export default function MoveRemainingButton({
                 }
                 className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
               >
-                {saving ? "Moving..." : "Move"}
+                {saving
+                  ? "Moving..."
+                  : refreshing
+                  ? "Updating..."
+                  : "Move"}
               </button>
             </div>
 
@@ -289,15 +293,6 @@ export default function MoveRemainingButton({
               </button>
             </div>
           </div>
-
-          <ActivityToast
-            show={busy}
-            label={
-              undoing
-                ? "Undoing move..."
-                : "Moving money..."
-            }
-          />
         </div>
       )}
 

@@ -244,3 +244,16 @@ a:hover {
 .help-popup-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: var(--accent-blue-dark);
 }
+/* -------------------------------------------------------
+   TOP LOADING BAR (Daily Spending refresh indicator)
+------------------------------------------------------- */
+
+@keyframes loading-bar-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(400%);
+  }
+}

@@ -8,6 +8,7 @@ import {
   reverseAllPushesToNextMonth,
 } from "./actions";
 import HelpButton from "../home/HelpButton";
+import { useRefresh } from "@/components/RefreshProvider";
 
 type PushHead = {
   id: string;
@@ -31,6 +32,7 @@ export default function PushRemainingButton({
   heads,
 }: PushRemainingButtonProps) {
   const router = useRouter();
+  const { runRefresh } = useRefresh();
 
   const [open, setOpen] = useState(false);
   const [selectedHeadIds, setSelectedHeadIds] =
@@ -90,7 +92,7 @@ export default function PushRemainingButton({
     setOpen(false);
     setSelectedHeadIds([]);
 
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handleReverseConfirm() {
@@ -126,7 +128,7 @@ export default function PushRemainingButton({
     setOpen(false);
     setSelectedHeadIds([]);
 
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   async function handleReverseAllConfirm() {
@@ -153,7 +155,7 @@ export default function PushRemainingButton({
     setOpen(false);
     setSelectedHeadIds([]);
 
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   return (

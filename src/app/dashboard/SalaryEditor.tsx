@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useRefresh } from "@/components/RefreshProvider";
 import { updateSalary } from "./actions";
 
 type SalaryEditorProps = {
@@ -15,6 +16,7 @@ export default function SalaryEditor({
   salary,
 }: SalaryEditorProps) {
   const router = useRouter();
+  const { runRefresh } = useRefresh();
 
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(String(salary));
@@ -62,7 +64,7 @@ export default function SalaryEditor({
     }
 
     setEditing(false);
-    router.refresh();
+    runRefresh(() => router.refresh());
   }
 
   return (

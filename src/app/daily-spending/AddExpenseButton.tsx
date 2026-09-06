@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import ActivityToast from "@/components/ActivityToast";
+import { useRefresh } from "@/components/RefreshProvider";
 import { createSpendingEntry } from "./actions";
 import {
   MONTH_NAMES,
@@ -31,14 +31,24 @@ export default function AddExpenseButton({
 }: AddExpenseButtonProps) {
   const router = useRouter();
 
-  const [isRefreshing, startTransition] =
-    useTransition();
+  const { refreshing, runRefresh } =
+    useRefresh();
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [error, setError] = useState("");
 
-  const busy = saving || isRefreshing;
+  const busy = saving || closing;
+
+  // Keep the modal open until the post-save refresh finishes,
+  // then close it (feedback stays where the user is looking).
+  useEffect(() => {
+    if (closing && !refreshing) {
+      setOpen(false);
+      setClosing(false);
+    }
+  }, [closing, refreshing]);
 
   const monthLabel =
     MONTH_NAMES[
@@ -100,19 +110,15 @@ export default function AddExpenseButton({
     }
 
     setSaving(false);
-    setOpen(false);
+    setClosing(true);
 
-    startTransition(() => {
+    runRefresh(() => {
       router.refresh();
     });
   }
 
   return (
     <>
-      <ActivityToast
-        show={busy}
-        label="Adding expense..."
-      />
 
       <button
         type="button"
@@ -249,7 +255,11 @@ export default function AddExpenseButton({
                 }
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
               >
-                {saving ? "Adding..." : "Add expense"}
+                {saving
+                  ? "Adding..."
+                  : closing
+                  ? "Updating..."
+                  : "Add expense"}
               </button>
             </div>
           </div>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import ActivityToast from "@/components/ActivityToast";
+import { useRefresh } from "@/components/RefreshProvider";
 import SpendingEntryRow from "./SpendingEntryRow";
 import { createSpendingEntry } from "./actions";
 import {
@@ -60,8 +60,8 @@ export default function SpendingCalendar({
 }: SpendingCalendarProps) {
   const router = useRouter();
 
-  const [isRefreshing, startTransition] =
-    useTransition();
+  const { refreshing, runRefresh } =
+    useRefresh();
 
   const [open, setOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<
@@ -76,6 +76,8 @@ export default function SpendingCalendar({
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const busy = saving || refreshing;
 
   const year = Number(monthStart.slice(0, 4));
   const month = Number(monthStart.slice(5, 7));
@@ -140,7 +142,7 @@ export default function SpendingCalendar({
   }
 
   function closeDay() {
-    if (saving) {
+    if (busy) {
       return;
     }
 
@@ -176,7 +178,7 @@ export default function SpendingCalendar({
     setNote("");
     setAdding(false);
 
-    startTransition(() => {
+    runRefresh(() => {
       router.refresh();
     });
   }
@@ -372,12 +374,14 @@ export default function SpendingCalendar({
                     type="button"
                     onClick={handleAdd}
                     disabled={
-                      saving || !amount.trim()
+                      busy || !amount.trim()
                     }
                     className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
                   >
                     {saving
                       ? "Adding..."
+                      : refreshing
+                      ? "Updating..."
                       : "Add"}
                   </button>
 
@@ -386,7 +390,7 @@ export default function SpendingCalendar({
                     onClick={() =>
                       setAdding(false)
                     }
-                    disabled={saving}
+                    disabled={busy}
                     className="rounded-lg border border-[#f3b9cd] px-3 py-1.5 text-xs font-medium text-[#647086] hover:bg-[#ffdce9] disabled:cursor-not-allowed disabled:text-zinc-400"
                   >
                     Cancel
@@ -407,18 +411,13 @@ export default function SpendingCalendar({
               <button
                 type="button"
                 onClick={closeDay}
-                disabled={saving}
+                disabled={busy}
                 className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0] disabled:cursor-not-allowed disabled:text-zinc-400"
               >
                 Done
               </button>
             </div>
           </div>
-
-          <ActivityToast
-            show={saving || isRefreshing}
-            label="Adding expense..."
-          />
         </div>
       )}
     </>

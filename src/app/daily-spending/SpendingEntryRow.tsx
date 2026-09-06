@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import ConfirmDialog from "@/components/ConfirmDialog";
-import ActivityToast from "@/components/ActivityToast";
+import { useRefresh } from "@/components/RefreshProvider";
 import {
   updateSpendingEntry,
   deleteSpendingEntry,
@@ -52,8 +52,8 @@ export default function SpendingEntryRow({
 }: SpendingEntryRowProps) {
   const router = useRouter();
 
-  const [isRefreshing, startTransition] =
-    useTransition();
+  const { refreshing, runRefresh } =
+    useRefresh();
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -63,11 +63,8 @@ export default function SpendingEntryRow({
     useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const [busyLabel, setBusyLabel] =
-    useState("");
-
-  const showToast =
-    saving || deleting || isRefreshing;
+  const busy =
+    saving || deleting || refreshing;
 
   const monthLabel =
     MONTH_NAMES[
@@ -105,7 +102,6 @@ export default function SpendingEntryRow({
 
   async function handleSave() {
     setError("");
-    setBusyLabel("Saving expense...");
     setSaving(true);
 
     const result = await updateSpendingEntry(
@@ -131,13 +127,12 @@ export default function SpendingEntryRow({
     setSaving(false);
     setEditing(false);
 
-    startTransition(() => {
+    runRefresh(() => {
       router.refresh();
     });
   }
 
   async function handleDelete() {
-    setBusyLabel("Deleting expense...");
     setDeleting(true);
 
     const result = await deleteSpendingEntry(
@@ -157,7 +152,7 @@ export default function SpendingEntryRow({
     setDeleting(false);
     setConfirmOpen(false);
 
-    startTransition(() => {
+    runRefresh(() => {
       router.refresh();
     });
   }
@@ -165,11 +160,6 @@ export default function SpendingEntryRow({
   if (editing) {
     return (
       <div className="rounded-xl border border-[#f3b9cd] bg-[#ffe8f0] p-3">
-        <ActivityToast
-          show={showToast}
-          label={busyLabel}
-        />
-
         <div className="grid gap-2 sm:grid-cols-2">
           <select
             value={day}
@@ -238,16 +228,20 @@ export default function SpendingEntryRow({
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving}
+            disabled={busy}
             className="rounded-lg bg-zinc-950 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
           >
-            {saving ? "Saving..." : "Save"}
+            {saving
+              ? "Saving..."
+              : refreshing
+              ? "Updating..."
+              : "Save"}
           </button>
 
           <button
             type="button"
             onClick={() => setEditing(false)}
-            disabled={saving}
+            disabled={busy}
             className="rounded-lg border border-[#f3b9cd] px-3 py-1.5 text-xs font-medium text-[#647086] hover:bg-[#ffdce9] disabled:cursor-not-allowed disabled:text-zinc-400"
           >
             Cancel
@@ -259,11 +253,6 @@ export default function SpendingEntryRow({
 
   return (
     <>
-      <ActivityToast
-        show={showToast}
-        label={busyLabel}
-      />
-
       <div className="flex items-center justify-between gap-3 rounded-xl border border-[#f3b9cd] bg-[#ffe8f0] px-3 py-2.5">
         <div className="flex min-w-0 items-baseline gap-2">
           <span className="shrink-0 text-xs text-[#647086]">
