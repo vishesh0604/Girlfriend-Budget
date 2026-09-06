@@ -13,6 +13,7 @@ import MonthNavigator from "../dashboard/MonthNavigator";
 import HomeButton from "./HomeButton";
 import ManageCategoriesButton from "./ManageCategoriesButton";
 import AddExpenseButton from "./AddExpenseButton";
+import SpendingCalendar from "./SpendingCalendar";
 import SpendingEntryRow from "./SpendingEntryRow";
 import {
   ensureDefaultSpendingCategories,
@@ -358,22 +359,32 @@ export default async function DailySpendingPage({
   // Expenses always fall inside the month being viewed, so the
   // Add/Edit forms only pick a day of that month. Default to today
   // for the current month, otherwise the 1st.
-  const defaultDay =
+  const todayDay =
     monthStart === currentMonthStart
       ? now.getDate()
-      : 1;
+      : null;
+
+  const defaultDay = todayDay ?? 1;
 
   return (
-    <main className="min-h-screen bg-[#e5f6ff] px-4 py-8 text-zinc-950">
-      <div className="mx-auto w-full max-w-4xl">
+    <main className="min-h-screen overflow-x-hidden bg-[#e5f6ff] px-5 py-8 text-zinc-950 sm:px-8">
+      <div className="mx-auto w-full max-w-5xl">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <HomeButton />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ManageCategoriesButton
               categories={categoryList}
+            />
+
+            <SpendingCalendar
+              entries={entries}
+              categories={categoryOptions}
+              monthStart={monthStart}
+              daysInMonth={daysInMonth}
+              todayDay={todayDay}
             />
 
             <AddExpenseButton
