@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { initializeMonthlyBudget } from "../dashboard/actions";
 import MonthNavigator from "../dashboard/MonthNavigator";
+import HelpButton from "../home/HelpButton";
 import HomeButton from "./HomeButton";
 import ManageCategoriesButton from "./ManageCategoriesButton";
 import AddExpenseButton from "./AddExpenseButton";
@@ -380,6 +381,135 @@ export default async function DailySpendingPage({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <HomeButton />
+
+            <HelpButton
+              title="Daily Spending Tracker"
+              align="center"
+            >
+              <div className="space-y-5">
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    What this page is for
+                  </p>
+                  <p className="mt-1">
+                    A running log of your day-to-day spending
+                    for the month, drawn from your Spending Pool.
+                    It is separate from Fixed Expenses and never
+                    changes your allocations.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Month Navigator
+                  </p>
+                  <p className="mt-1">
+                    Use the month and year selectors to move
+                    between your current, previous, and future
+                    months. The page updates to show the selected
+                    month.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Spending Pool
+                  </p>
+                  <p className="mt-1">
+                    Your salary minus your committed allocations
+                    (from Fixed Expenses), plus anything carried
+                    forward from last month.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Spent
+                  </p>
+                  <p className="mt-1">
+                    The total of every expense you have logged in
+                    the selected month.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Remaining
+                  </p>
+                  <p className="mt-1">
+                    Spending Pool minus what you have spent minus
+                    anything you have moved out. This is what is
+                    still available to spend this month.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Add expense
+                  </p>
+                  <p className="mt-1">
+                    Log a single expense with a day, a category,
+                    an amount and an optional note.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Month overview
+                  </p>
+                  <p className="mt-1">
+                    A calendar of the month showing what you spent
+                    on each day. Tap a day to see or add its
+                    expenses.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Move remaining
+                  </p>
+                  <p className="mt-1">
+                    Send leftover Spending Pool money to next
+                    month&apos;s pool and/or into any Fixed
+                    Expenses budget head. You can split it and
+                    undo any move. A move into a Fixed head lifts
+                    that head&apos;s balance without changing its
+                    allocation.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Manage categories
+                  </p>
+                  <p className="mt-1">
+                    Add, rename or delete the categories you tag
+                    expenses with. Deleting one moves its expenses
+                    to Miscellaneous; the expenses are kept.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    By category
+                  </p>
+                  <p className="mt-1">
+                    A breakdown of how much you spent per category
+                    this month.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Expenses
+                  </p>
+                  <p className="mt-1">
+                    Every expense logged this month, newest first.
+                    Each one can be edited or deleted.
+                  </p>
+                </div>
+              </div>
+            </HelpButton>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
