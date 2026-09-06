@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 type TransitionType =
   | "login"
   | "dashboard"
+  | "dailySpending"
   | "customize"
   | "home"
   | "logout";
@@ -31,6 +32,16 @@ const transitionContent = {
   dashboard: {
     title: "Opening your budget",
     subtitle: "Getting everything ready...",
+    icon: "₹",
+    background: "#ffdce9",
+    border: "#f3b9cd",
+    iconBackground: "#ffe8f0",
+    iconColor: "#4f8fbd",
+  },
+
+  dailySpending: {
+    title: "Opening your spending",
+    subtitle: "Getting your day-to-day budget ready...",
     icon: "₹",
     background: "#ffdce9",
     border: "#f3b9cd",

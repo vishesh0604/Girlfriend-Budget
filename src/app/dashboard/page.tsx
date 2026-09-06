@@ -553,7 +553,7 @@ export default async function DashboardPage({
         <HomeButton />
 
         <HelpButton
-        title="Dashboard"
+        title="Fixed Expenses"
         align="center"
         >
         <div className="space-y-5">
@@ -563,8 +563,8 @@ export default async function DashboardPage({
             </p>
             <p className="mt-1">
                 Use the month and year selectors to move between your current,
-                previous, and future monthly budgets. The Dashboard updates to
-                show the selected month.
+                previous, and future monthly budgets. The Fixed Expenses page
+                updates to show the selected month.
             </p>
             </div>
 

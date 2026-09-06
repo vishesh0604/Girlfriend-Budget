@@ -51,15 +51,28 @@ export default async function HomePage() {
               <HelpButton title="How Budget Tracker works">
                 <div>
                   <h3 className="font-semibold text-[#26354d]">
-                    Dashboard
+                    Fixed Expenses
                   </h3>
 
                   <p className="mt-1">
-                    Your monthly budget overview. Open it to see your
-                    salary, committed expenses, spending pool, daily
-                    budget, and all your budget heads with their
-                    allocations, payments, fund moves, and remaining
-                    balances.
+                    Your monthly budget overview for fixed, committed
+                    money. Open it to see your salary, committed
+                    expenses, spending pool, daily budget, and all your
+                    budget heads with their allocations, payments, fund
+                    moves, and remaining balances.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-[#26354d]">
+                    Daily Spending Tracker
+                  </h3>
+
+                  <p className="mt-1">
+                    Log your day-to-day spending against the month&apos;s
+                    spending pool. Add each expense with a category, note
+                    and date, and see how much is left and how much you
+                    can spend per day.
                   </p>
                 </div>
 
@@ -78,11 +91,11 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-3">
             <PageTransition
               href="/dashboard"
               type="dashboard"
-              className="group rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              className="group flex flex-col rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe8f0] text-[#4f8fbd]">
                 <svg
@@ -108,23 +121,66 @@ export default async function HomePage() {
               </div>
 
               <h2 className="text-xl font-semibold text-[#26354d]">
-                Dashboard
+                Fixed Expenses
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-[#647086]">
-                View your monthly budget, spending pool,
-                daily budget, and budget heads.
+                Salary, committed heads, spending pool and
+                daily budget for the month.
               </p>
 
-              <div className="mt-6 font-medium text-[#3978a5]">
-                Open Dashboard →
+              <div className="mt-auto pt-6 font-medium text-[#3978a5]">
+                Open Fixed Expenses →
+              </div>
+            </PageTransition>
+
+            <PageTransition
+              href="/daily-spending"
+              type="dailySpending"
+              className="group flex flex-col rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe8f0] text-[#4f8fbd]">
+                <svg
+                  width="25"
+                  height="25"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="17"
+                    rx="2"
+                  />
+                  <path d="M3 10h18" />
+                  <path d="M8 2v4" />
+                  <path d="M16 2v4" />
+                </svg>
+              </div>
+
+              <h2 className="text-xl font-semibold text-[#26354d]">
+                Daily Spending Tracker
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-[#647086]">
+                Log day-to-day expenses against your
+                spending pool.
+              </p>
+
+              <div className="mt-auto pt-6 font-medium text-[#3978a5]">
+                Open Daily Spending →
               </div>
             </PageTransition>
 
             <PageTransition
               href="/customize-budget"
               type="customize"
-              className="group rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              className="group flex flex-col rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe8f0] text-[#d96b91]">
                 <svg
@@ -153,8 +209,8 @@ export default async function HomePage() {
                 your budget heads.
               </p>
 
-              <div className="mt-6 font-medium text-[#c4567d]">
-                Customize Budget →
+              <div className="mt-auto pt-6 font-medium text-[#c4567d]">
+                Open Customize Budget →
               </div>
             </PageTransition>
           </div>

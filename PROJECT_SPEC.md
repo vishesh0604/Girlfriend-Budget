@@ -29,6 +29,8 @@ CURRENT_STATE.md holds the detailed implementation status.
 
 ## To Do
 
+- Build the Daily Spending Tracker (section 51) - the big one, done in
+  milestones.
 - Show carried-forward money on the budget-head card (a "Carried over"
   line, shown only when it is non-zero, with an inline Undo).
 - Update the /home help "?" to say the site only accounts for fixed
@@ -409,9 +411,14 @@ Never produce:
 
 # 14. PAID / USED
 
-The application is NOT an expense tracker.
+Scope note: this section governs the Fixed Expenses tracker only. The
+Daily Spending Tracker (section 51) is a deliberate transaction-level
+expense log and is exempt.
 
-Do NOT build detailed transaction-level expense tracking.
+The Fixed Expenses tracker is NOT an expense tracker.
+
+Do NOT build detailed transaction-level expense tracking into Fixed
+Expenses.
 
 The user only enters the total actual amount used/paid for each budget head in a month.
 
@@ -751,9 +758,13 @@ The dashboard should prioritize clarity over analytics.
 
 ---
 
-# 27. NO EXPENSE TRACKER
+# 27. NO EXPENSE TRACKER (FIXED EXPENSES ONLY)
 
-Do NOT build:
+Scope note: this section governs the Fixed Expenses tracker only. The
+Daily Spending Tracker (section 51) IS a transaction-level expense log by
+explicit user decision.
+
+For Fixed Expenses, do NOT build:
 
 - individual purchase tracking
 - merchant tracking
@@ -761,7 +772,7 @@ Do NOT build:
 - bank transaction imports
 - detailed spending categories
 
-The application only needs monthly "Paid / Used" totals.
+Fixed Expenses only needs monthly "Paid / Used" totals.
 
 ---
 
@@ -1282,3 +1293,148 @@ The user should be able to open the app and understand:
 "What is carrying into next month?"
 
 Everything else is secondary.
+
+---
+
+# 51. DAILY SPENDING TRACKER
+
+Status: Planned. Not yet implemented.
+
+## Purpose
+
+A second, independent tracker for discretionary day-to-day spending, drawn
+from the monthly Spending Pool (Salary - Committed). It runs alongside the
+Fixed Expenses tracker (formerly "Dashboard") and Customize Budget as a
+third area reached from the home page.
+
+Sections 14 and 27 ("no expense tracker") apply to the Fixed Expenses
+tracker only. The Daily Spending Tracker is a deliberate, transaction-level
+expense log, added by explicit user decision.
+
+## Independence
+
+Fixed Expenses and Daily Spending do not share budget heads, categories,
+tables or logic. The only connection is a one-way action: leftover
+Spending Pool money can be moved out (see "Move remaining").
+
+## It is a ledger, not allocations
+
+There are no per-category cards or allocations. The page is a running list
+of transactions. A prominent "+ Add expense" button is the primary action.
+
+Each expense has exactly four fields:
+
+- category (required; defaults to "Miscellaneous")
+- amount
+- note (optional)
+- date
+
+## Categories
+
+- Reusable tags only - they carry no budget.
+- Fully user-managed via a "Manage categories" button at the top of the
+  page (same treatment as "Push remaining amount" on Fixed Expenses): a
+  popup to add, rename and delete categories.
+- A starter set is seeded for new users: Food, Shopping, Transportation,
+  Household, Utility, Entertainment, Miscellaneous. "Miscellaneous" always
+  exists and cannot be deleted.
+- Deleting a category that is in use: confirm first ("This category is used
+  in N expenses. Delete it?"). On confirm, the category is removed and its
+  expenses are reassigned to "Miscellaneous" - the expenses themselves are
+  never deleted.
+
+## The money model
+
+For a given month M:
+
+    Spending Pool (M)  =  (Salary(M) - Committed(M))  +  carried in from M-1
+    Total spent (M)    =  sum of all expense amounts dated in M
+    Moved out (M)      =  sum of "move remaining" amounts from M
+    Remaining (M)      =  Spending Pool(M) - Total spent(M) - Moved out(M)
+
+"Carried in from M-1" is derived from M-1's move-remaining records whose
+destination is "next month" - not a stored balance. Undoing a move is
+deleting its record.
+
+Salary and Committed come from the Fixed Expenses side and are read-only
+here.
+
+## Move remaining
+
+Leftover Remaining can be moved out, in any split:
+
+- to next month's Spending Pool, and/or
+- to any active Fixed Expenses budget head for the same month (rent,
+  electricity, investment, saving - any of them).
+
+A move into a Fixed head is recorded as a transfer-in on that head. It
+does NOT change the head's allocation, so Committed and the Spending Pool
+are unaffected - no feedback loop. The head shows the received amount and
+the Current Account Balance rises accordingly.
+
+Partial and multiple moves are allowed (e.g. move 2,000 to Saving + 1,000
+to next month, out of 3,000 remaining).
+
+## Per-day figures and pace
+
+    Days in month        calendar days
+    Days elapsed         day-of-month today (current month); full month for
+                         past months
+    Baseline per day     Spending Pool(M) / days in month
+    Expected by now      Spending Pool(M) * (days elapsed / days in month)
+    Remaining per day    Remaining(M) / days left in month
+
+Pace status (shown only for the current month):
+
+- spent > expected by now * 1.10  ->  "Overspending by X"
+- spent < expected by now * 0.90  ->  "Underspending by X"
+- otherwise (within +/-10%)        ->  "On track"
+
+Past and future months show plain figures (Spent, Remaining) with no pace
+status.
+
+## Page layout
+
+- Month navigator (shared component with Fixed Expenses)
+- "Manage categories" button, top
+- "+ Add expense" button, prominent
+- Summary: Spending Pool, Spent, Remaining, Remaining per day, pace status
+  (current month only)
+- Calendar grid for the month: each day cell shows that day's total; tap a
+  day to view and add its expenses
+- Category breakdown: total spent per category for the month
+- Transactions list: newest first; each row shows category, amount, note,
+  date; each is editable and deletable
+- "Move remaining" action
+
+Historical months keep their transactions unchanged. Changing the current
+month never rewrites past months.
+
+## Naming
+
+- The former "Dashboard" is relabelled "Fixed Expenses" throughout (route
+  stays /dashboard).
+- The new page is "Daily Spending Tracker" (route /daily-spending).
+- Home page shows three cards: Fixed Expenses, Daily Spending Tracker,
+  Customize Budget.
+
+## Data
+
+    spending_categories   id, user_id, name, is_active, created_at, updated_at
+    spending_entries      id, user_id, entry_date, category_id, amount,
+                          note, created_at, updated_at
+    spending_moves        id, user_id, month_start, amount, destination_kind
+                          ('next_month' | 'budget_head'),
+                          destination_monthly_head_id (nullable), created_at
+
+All rows isolated by user_id with RLS (auth.uid() = user_id).
+
+## Build milestones
+
+1. Relabel Dashboard -> Fixed Expenses; add the third home-page card
+   (linking to a stub page).
+2. Schema + category management popup + seeded defaults.
+3. Add expense, transactions list, summary (spent / remaining / per day).
+4. Calendar view.
+5. Pace status.
+6. Move remaining + the transfer-in bridge to Fixed head balances.
