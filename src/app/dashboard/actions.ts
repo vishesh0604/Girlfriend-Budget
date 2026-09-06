@@ -7,6 +7,7 @@ import {
   calculateMaximumPaidAmount,
   type TransferRecord,
 } from "@/lib/supabase/budget/calculations";
+import { loadSpendingMoveTransferRecords } from "@/lib/supabase/spending/moves";
 
 function getPreviousMonthStart(
   monthStart: string
@@ -618,10 +619,26 @@ export async function updateMonthlyHeadPaidAmount(
     totalAvailable -
     currentPaidAmount;
 
+  /*
+   * Money moved in from the Daily Spending pool also raises
+   * this head's available balance.
+   */
+  const spendingMoveIn = (
+    await loadSpendingMoveTransferRecords(
+      supabase,
+      user.id,
+      [monthlyHeadId]
+    )
+  ).reduce(
+    (total, record) => total + (record.amount ?? 0),
+    0
+  );
+
   const currentFinalBalance =
     currentRemaining -
     transfersOut +
-    transfersIn;
+    transfersIn +
+    spendingMoveIn;
 
   /*
    * A Paid / Used total may only consume the
@@ -868,10 +885,22 @@ export async function createTransfer(
     totalAvailable -
     Number(sourceHead.paid_amount);
 
+  const spendingMoveIn = (
+    await loadSpendingMoveTransferRecords(
+      supabase,
+      user.id,
+      [sourceMonthlyHeadId]
+    )
+  ).reduce(
+    (total, record) => total + (record.amount ?? 0),
+    0
+  );
+
   const availableBalance =
     remaining -
     transfersOut +
-    transfersIn;
+    transfersIn +
+    spendingMoveIn;
 
   if (amount > availableBalance) {
     return {
@@ -1089,17 +1118,23 @@ export async function pushRemainingToNextMonth(
     };
   }
 
-  const transferRecords: TransferRecord[] =
-    (transfers ?? []).map((transfer) => ({
+  const transferRecords: TransferRecord[] = [
+    ...(transfers ?? []).map((transfer) => ({
       sourceHeadId:
         transfer.source_monthly_head_id,
       destinationHeadId:
         transfer.destination_monthly_head_id,
       amount: Number(transfer.amount),
-    }));
+    })),
+    ...(await loadSpendingMoveTransferRecords(
+      supabase,
+      user.id,
+      [currentHead.id]
+    )),
+  ];
 
   // Calculate the CURRENT actual remaining balance,
-  // including carry-forward and transfers.
+  // including carry-forward, transfers and spending-pool moves.
   const currentState = calculateHeadState(
     {
       id: currentHead.id,

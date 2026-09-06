@@ -117,7 +117,7 @@ export default function AddExpenseButton({
       <button
         type="button"
         onClick={handleOpen}
-        className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100"
+        className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-100"
       >
         + Add expense
       </button>

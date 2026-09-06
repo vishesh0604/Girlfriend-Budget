@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getSpendingSnapshot } from "./spendingSnapshot";
 
 const DEFAULT_CATEGORIES = [
   "Food",
@@ -593,6 +594,200 @@ export async function deleteSpendingEntry(
   }
 
   revalidatePath("/daily-spending");
+
+  return { success: true };
+}
+
+function isValidMonthStartValue(value: string) {
+  return /^\d{4}-\d{2}-01$/.test(value);
+}
+
+export async function createSpendingMove(
+  monthStart: string,
+  amountValue: string,
+  destinationKind: string,
+  destinationMonthlyHeadId: string | null
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  if (!isValidMonthStartValue(monthStart)) {
+    return {
+      success: false,
+      error: "The month could not be identified.",
+    };
+  }
+
+  const amount = Number(amountValue);
+
+  if (!Number.isFinite(amount)) {
+    return {
+      success: false,
+      error: "Amount must be a valid number.",
+    };
+  }
+
+  if (amount <= 0) {
+    return {
+      success: false,
+      error: "Amount must be greater than ₹0.",
+    };
+  }
+
+  if (
+    destinationKind !== "next_month" &&
+    destinationKind !== "budget_head"
+  ) {
+    return {
+      success: false,
+      error: "Choose where to move the money.",
+    };
+  }
+
+  let resolvedHeadId: string | null = null;
+
+  if (destinationKind === "budget_head") {
+    if (!destinationMonthlyHeadId) {
+      return {
+        success: false,
+        error: "Choose a budget head to move it to.",
+      };
+    }
+
+    const {
+      data: budget,
+      error: budgetError,
+    } = await supabase
+      .from("monthly_budgets")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("month_start", monthStart)
+      .maybeSingle();
+
+    if (budgetError) {
+      return {
+        success: false,
+        error: budgetError.message,
+      };
+    }
+
+    if (!budget) {
+      return {
+        success: false,
+        error:
+          "This month's fixed budget does not exist yet.",
+      };
+    }
+
+    const {
+      data: head,
+      error: headError,
+    } = await supabase
+      .from("monthly_budget_heads")
+      .select("id")
+      .eq("id", destinationMonthlyHeadId)
+      .eq("user_id", user.id)
+      .eq("monthly_budget_id", budget.id)
+      .maybeSingle();
+
+    if (headError) {
+      return {
+        success: false,
+        error: headError.message,
+      };
+    }
+
+    if (!head) {
+      return {
+        success: false,
+        error:
+          "That budget head is not part of this month.",
+      };
+    }
+
+    resolvedHeadId = head.id;
+  }
+
+  const snapshot = await getSpendingSnapshot(
+    supabase,
+    user.id,
+    monthStart
+  );
+
+  if (amount > snapshot.remaining) {
+    return {
+      success: false,
+      error: `You can move at most ₹${snapshot.remaining.toLocaleString(
+        "en-IN"
+      )}.`,
+    };
+  }
+
+  const { error } = await supabase
+    .from("spending_moves")
+    .insert({
+      user_id: user.id,
+      month_start: monthStart,
+      amount,
+      destination_kind: destinationKind,
+      destination_monthly_head_id:
+        resolvedHeadId,
+    });
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  revalidatePath("/daily-spending");
+  revalidatePath("/dashboard");
+
+  return { success: true };
+}
+
+export async function deleteSpendingMove(
+  moveId: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("spending_moves")
+    .delete()
+    .eq("id", moveId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  revalidatePath("/daily-spending");
+  revalidatePath("/dashboard");
 
   return { success: true };
 }

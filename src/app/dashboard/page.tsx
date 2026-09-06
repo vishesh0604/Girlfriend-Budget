@@ -11,6 +11,8 @@ import {
   type TransferRecord,
 } from "@/lib/supabase/budget/calculations";
 
+import { loadSpendingMoveTransferRecords } from "@/lib/supabase/spending/moves";
+
 import { initializeMonthlyBudget } from "./actions";
 import SalaryEditor from "./SalaryEditor";
 import BudgetHeadEditor from "./BudgetHeadEditor";
@@ -312,6 +314,26 @@ export default async function DashboardPage({
       ),
     }));
 
+  /*
+   * Money moved in from the Daily Spending pool counts as a
+   * transfer-in on the destination head (PROJECT_SPEC.md
+   * section 51). It lifts the head balance and Current Account
+   * Balance without changing allocations.
+   */
+  const spendingMoveRecords =
+    await loadSpendingMoveTransferRecords(
+      supabase,
+      user.id,
+      (monthlyHeads ?? []).map(
+        (head) => head.id
+      )
+    );
+
+  const allTransferRecords: TransferRecord[] = [
+    ...transferRecords,
+    ...spendingMoveRecords,
+  ];
+
   const headStates = (
     monthlyHeads ?? []
   ).map((head) => {
@@ -328,7 +350,7 @@ export default async function DashboardPage({
           head.paid_amount
         ),
       },
-      transferRecords
+      allTransferRecords
     );
 
     const budgetHead = Array.isArray(

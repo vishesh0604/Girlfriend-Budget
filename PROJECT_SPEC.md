@@ -26,16 +26,22 @@ CURRENT_STATE.md holds the detailed implementation status.
   it is visible in, so it can be undone from the receiving month, not
   only from the month the push was made.
 - Save buttons on the inline editors use the app's blue instead of black.
-- Daily Spending Tracker milestones 1-3: Fixed Expenses rename + third
-  home card, spending categories (seed / add / rename / delete), and
-  expense logging with the Spending Pool / Spent / Remaining summary,
-  calendar-free for now. Per-day and over/under-spending indicators were
-  built then removed at the user's request.
+- Daily Spending Tracker (section 51) is fully built: Fixed Expenses
+  rename + third home card; spending categories (seed / add / rename /
+  delete); expense logging with the Spending Pool / Spent / Remaining
+  summary; a "Month overview" calendar popup; and "Move remaining"
+  (split freely between next month's pool and any Fixed head, with the
+  Fixed head receiving it as a transfer-in that lifts its balance and
+  the Current Account Balance without touching allocations). Per-day and
+  over/under-spending indicators were built then removed at the user's
+  request.
 
 ## To Do
 
-- Daily Spending Tracker (section 51) milestones 4-5: calendar view, then
-  "move remaining" + the transfer-in bridge to Fixed head balances.
+- Show carried-forward money on the Fixed Expenses budget-head card (a
+  "Carried over" line, shown only when non-zero, with an inline Undo).
+- Update the /home help "?" wording; add a help note for editing a fund
+  move; revisit the /dashboard help "?" wording.
 - Show carried-forward money on the budget-head card (a "Carried over"
   line, shown only when it is non-zero, with an inline Undo).
 - Update the /home help "?" to say the site only accounts for fixed
@@ -1432,5 +1438,7 @@ All rows isolated by user_id with RLS (auth.uid() = user_id).
 2. Schema + category management popup + seeded defaults. DONE.
 3. Add expense, transactions list, summary (Spending Pool / Spent /
    Remaining). DONE.
-4. Calendar view.
-5. Move remaining + the transfer-in bridge to Fixed head balances.
+4. Calendar view (as a "Month overview" popup). DONE.
+5. Move remaining (split between next month and any Fixed head) + the
+   transfer-in bridge to Fixed head balances, and carried-in from the
+   previous month's "next month" moves. DONE.

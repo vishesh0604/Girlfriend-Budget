@@ -1,13 +1,6 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import {
-  calculateCommittedAmount,
-  calculateSpendingPool,
-  calculateTotalSpent,
-  calculateSpendingAvailable,
-  calculateSpendingRemaining,
-} from "@/lib/supabase/budget/calculations";
 import { initializeMonthlyBudget } from "../dashboard/actions";
 import MonthNavigator from "../dashboard/MonthNavigator";
 import HomeButton from "./HomeButton";
@@ -15,6 +8,8 @@ import ManageCategoriesButton from "./ManageCategoriesButton";
 import AddExpenseButton from "./AddExpenseButton";
 import SpendingCalendar from "./SpendingCalendar";
 import SpendingEntryRow from "./SpendingEntryRow";
+import MoveRemainingButton from "./MoveRemainingButton";
+import { getSpendingSnapshot } from "./spendingSnapshot";
 import {
   ensureDefaultSpendingCategories,
 } from "./actions";
@@ -102,17 +97,12 @@ export default async function DailySpendingPage({
    * (salary minus committed). Make sure the month exists for
    * the current or a future month; leave past months alone.
    */
-  let monthlyBudget: {
-    id: string;
-    salary: number | string | null;
-  } | null = null;
-
   const {
     data: existingBudget,
     error: existingBudgetError,
   } = await supabase
     .from("monthly_budgets")
-    .select("id, salary")
+    .select("id")
     .eq("user_id", user.id)
     .eq("month_start", monthStart)
     .maybeSingle();
@@ -123,10 +113,8 @@ export default async function DailySpendingPage({
     );
   }
 
-  monthlyBudget = existingBudget;
-
   if (
-    !monthlyBudget &&
+    !existingBudget &&
     monthStart >= currentMonthStart
   ) {
     const initResult =
@@ -138,67 +126,65 @@ export default async function DailySpendingPage({
           "Unable to prepare this month."
       );
     }
-
-    const { data: refreshed } = await supabase
-      .from("monthly_budgets")
-      .select("id, salary")
-      .eq("user_id", user.id)
-      .eq("month_start", monthStart)
-      .maybeSingle();
-
-    monthlyBudget = refreshed;
   }
 
-  let committedAmount = 0;
+  const snapshot = await getSpendingSnapshot(
+    supabase,
+    user.id,
+    monthStart
+  );
 
-  if (monthlyBudget) {
+  // Active fixed-expense heads for this month, as targets for
+  // "move remaining".
+  let fixedHeads: Array<{
+    id: string;
+    name: string;
+  }> = [];
+
+  if (snapshot.monthlyBudgetId) {
     const {
-      data: monthlyHeads,
-      error: monthlyHeadsError,
+      data: fixedHeadRows,
+      error: fixedHeadRowsError,
     } = await supabase
       .from("monthly_budget_heads")
       .select(
-        "allocated_amount, budget_heads (head_type)"
+        "id, budget_heads (name, is_active)"
       )
       .eq("user_id", user.id)
       .eq(
         "monthly_budget_id",
-        monthlyBudget.id
+        snapshot.monthlyBudgetId
       );
 
-    if (monthlyHeadsError) {
+    if (fixedHeadRowsError) {
       throw new Error(
-        monthlyHeadsError.message
+        fixedHeadRowsError.message
       );
     }
 
-    committedAmount = calculateCommittedAmount(
-      (monthlyHeads ?? []).map((head) => {
+    fixedHeads = (fixedHeadRows ?? [])
+      .map((row) => {
         const budgetHead = Array.isArray(
-          head.budget_heads
+          row.budget_heads
         )
-          ? head.budget_heads[0]
-          : head.budget_heads;
+          ? row.budget_heads[0]
+          : row.budget_heads;
 
         return {
-          amount: Number(
-            head.allocated_amount
-          ),
-          headType:
-            budgetHead?.head_type ?? "other",
+          id: row.id as string,
+          name:
+            (budgetHead?.name as string) ??
+            "Budget head",
+          isActive:
+            budgetHead?.is_active !== false,
         };
       })
-    );
+      .filter((head) => head.isActive)
+      .map((head) => ({
+        id: head.id,
+        name: head.name,
+      }));
   }
-
-  const salary = Number(
-    monthlyBudget?.salary ?? 0
-  );
-
-  const spendingPool = calculateSpendingPool(
-    salary,
-    committedAmount
-  );
 
   const {
     data: categories,
@@ -303,22 +289,44 @@ export default async function DailySpendingPage({
     }
   );
 
-  const totalSpent = calculateTotalSpent(
-    entries
+  const totalSpent = snapshot.totalSpent;
+  const spendingAvailable = snapshot.spendingPool;
+  const remaining = snapshot.remaining;
+
+  // Existing "move remaining" records for this month.
+  const {
+    data: moveRows,
+    error: moveRowsError,
+  } = await supabase
+    .from("spending_moves")
+    .select(
+      "id, amount, destination_kind, destination_monthly_head_id, created_at"
+    )
+    .eq("user_id", user.id)
+    .eq("month_start", monthStart)
+    .order("created_at", { ascending: false });
+
+  if (moveRowsError) {
+    throw new Error(moveRowsError.message);
+  }
+
+  const fixedHeadNameById = new Map(
+    fixedHeads.map((head) => [
+      head.id,
+      head.name,
+    ])
   );
 
-  const spendingAvailable =
-    calculateSpendingAvailable(
-      spendingPool,
-      0
-    );
-
-  const remaining =
-    calculateSpendingRemaining(
-      spendingAvailable,
-      totalSpent,
-      0
-    );
+  const moves = (moveRows ?? []).map((row) => ({
+    id: row.id as string,
+    amount: Number(row.amount),
+    label:
+      row.destination_kind === "next_month"
+        ? "next month's pool"
+        : fixedHeadNameById.get(
+            row.destination_monthly_head_id as string
+          ) ?? "a budget head",
+  }));
 
   const [, month] = monthStart
     .split("-")
@@ -375,8 +383,11 @@ export default async function DailySpendingPage({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <ManageCategoriesButton
-              categories={categoryList}
+            <AddExpenseButton
+              categories={categoryOptions}
+              monthStart={monthStart}
+              daysInMonth={daysInMonth}
+              defaultDay={defaultDay}
             />
 
             <SpendingCalendar
@@ -387,11 +398,15 @@ export default async function DailySpendingPage({
               todayDay={todayDay}
             />
 
-            <AddExpenseButton
-              categories={categoryOptions}
+            <MoveRemainingButton
               monthStart={monthStart}
-              daysInMonth={daysInMonth}
-              defaultDay={defaultDay}
+              remaining={remaining}
+              fixedHeads={fixedHeads}
+              moves={moves}
+            />
+
+            <ManageCategoriesButton
+              categories={categoryList}
             />
           </div>
         </div>
@@ -410,6 +425,16 @@ export default async function DailySpendingPage({
             <p className="mt-2 text-2xl font-semibold">
               {formatCurrency(spendingAvailable)}
             </p>
+
+            {snapshot.carriedIn > 0 && (
+              <p className="mt-1 text-xs text-zinc-500">
+                includes{" "}
+                {formatCurrency(
+                  snapshot.carriedIn
+                )}{" "}
+                carried from last month
+              </p>
+            )}
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -430,6 +455,15 @@ export default async function DailySpendingPage({
             <p className="mt-2 text-2xl font-semibold">
               {formatCurrency(remaining)}
             </p>
+
+            {snapshot.movedOut > 0 && (
+              <p className="mt-1 text-xs text-zinc-500">
+                {formatCurrency(
+                  snapshot.movedOut
+                )}{" "}
+                moved out
+              </p>
+            )}
           </div>
         </section>
 
