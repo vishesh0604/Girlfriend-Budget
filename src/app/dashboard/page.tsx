@@ -854,42 +854,44 @@ export default async function DashboardPage({
             </div>
 
             <div className="mt-4 border-t border-zinc-100 pt-3">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
                 <span className="text-zinc-500">
                   Latest Move
                 </span>
 
-                {latestTransfer &&
-                latestTransferSource &&
-                latestTransferDestination ? (
-                  <>
-                    <span className="font-medium">
-                      {latestTransferSource.name}
-                    </span>
+                <div className="flex flex-1 flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-zinc-100 px-2.5 py-1.5">
+                  {latestTransfer &&
+                  latestTransferSource &&
+                  latestTransferDestination ? (
+                    <>
+                      <span className="font-medium">
+                        {latestTransferSource.name}
+                      </span>
 
+                      <span className="text-zinc-400">
+                        →
+                      </span>
+
+                      <span className="font-medium">
+                        {
+                          latestTransferDestination.name
+                        }
+                      </span>
+
+                      <span className="font-semibold">
+                        {formatCurrency(
+                          Number(
+                            latestTransfer.amount
+                          )
+                        )}
+                      </span>
+                    </>
+                  ) : (
                     <span className="text-zinc-400">
-                      →
+                      No moves yet
                     </span>
-
-                    <span className="font-medium">
-                      {
-                        latestTransferDestination.name
-                      }
-                    </span>
-
-                    <span className="font-semibold">
-                      {formatCurrency(
-                        Number(
-                          latestTransfer.amount
-                        )
-                      )}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-zinc-400">
-                    No moves yet
-                  </span>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
