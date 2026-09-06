@@ -26,11 +26,16 @@ CURRENT_STATE.md holds the detailed implementation status.
   it is visible in, so it can be undone from the receiving month, not
   only from the month the push was made.
 - Save buttons on the inline editors use the app's blue instead of black.
+- Daily Spending Tracker milestones 1-3: Fixed Expenses rename + third
+  home card, spending categories (seed / add / rename / delete), and
+  expense logging with the Spending Pool / Spent / Remaining summary,
+  calendar-free for now. Per-day and over/under-spending indicators were
+  built then removed at the user's request.
 
 ## To Do
 
-- Build the Daily Spending Tracker (section 51) - the big one, done in
-  milestones.
+- Daily Spending Tracker (section 51) milestones 4-5: calendar view, then
+  "move remaining" + the transfer-in bridge to Fixed head balances.
 - Show carried-forward money on the budget-head card (a "Carried over"
   line, shown only when it is non-zero, with an inline Undo).
 - Update the /home help "?" to say the site only accounts for fixed
@@ -1375,31 +1380,22 @@ the Current Account Balance rises accordingly.
 Partial and multiple moves are allowed (e.g. move 2,000 to Saving + 1,000
 to next month, out of 3,000 remaining).
 
-## Per-day figures and pace
+## Summary
 
-    Days in month        calendar days
-    Days elapsed         day-of-month today (current month); full month for
-                         past months
-    Baseline per day     Spending Pool(M) / days in month
-    Expected by now      Spending Pool(M) * (days elapsed / days in month)
-    Remaining per day    Remaining(M) / days left in month
+Only three figures are shown, and no per-day or pace/over-under-spending
+indicator (removed by user decision - the ever-changing per-day number
+was not wanted):
 
-Pace status (shown only for the current month):
-
-- spent > expected by now * 1.10  ->  "Overspending by X"
-- spent < expected by now * 0.90  ->  "Underspending by X"
-- otherwise (within +/-10%)        ->  "On track"
-
-Past and future months show plain figures (Spent, Remaining) with no pace
-status.
+    Spending Pool (M)  =  (Salary(M) - Committed(M)) + carried in from M-1
+    Spent (M)          =  sum of expense amounts dated in M
+    Remaining (M)      =  Spending Pool(M) - Spent(M) - Moved out(M)
 
 ## Page layout
 
 - Month navigator (shared component with Fixed Expenses)
 - "Manage categories" button, top
 - "+ Add expense" button, prominent
-- Summary: Spending Pool, Spent, Remaining, Remaining per day, pace status
-  (current month only)
+- Summary: Spending Pool, Spent, Remaining
 - Calendar grid for the month: each day cell shows that day's total; tap a
   day to view and add its expenses
 - Category breakdown: total spent per category for the month
@@ -1431,10 +1427,10 @@ All rows isolated by user_id with RLS (auth.uid() = user_id).
 
 ## Build milestones
 
-1. Relabel Dashboard -> Fixed Expenses; add the third home-page card
-   (linking to a stub page).
-2. Schema + category management popup + seeded defaults.
-3. Add expense, transactions list, summary (spent / remaining / per day).
+1. Relabel Dashboard -> Fixed Expenses; add the third home-page card.
+   DONE.
+2. Schema + category management popup + seeded defaults. DONE.
+3. Add expense, transactions list, summary (Spending Pool / Spent /
+   Remaining). DONE.
 4. Calendar view.
-5. Pace status.
-6. Move remaining + the transfer-in bridge to Fixed head balances.
+5. Move remaining + the transfer-in bridge to Fixed head balances.

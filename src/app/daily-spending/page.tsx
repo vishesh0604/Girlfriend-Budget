@@ -7,7 +7,6 @@ import {
   calculateTotalSpent,
   calculateSpendingAvailable,
   calculateSpendingRemaining,
-  calculateDailyBudget,
 } from "@/lib/supabase/budget/calculations";
 import { initializeMonthlyBudget } from "../dashboard/actions";
 import MonthNavigator from "../dashboard/MonthNavigator";
@@ -320,39 +319,17 @@ export default async function DailySpendingPage({
       0
     );
 
-  // Per-day figures.
-  const [year, month] = monthStart
+  const [, month] = monthStart
     .split("-")
     .map(Number);
 
+  const now = new Date();
+
   const daysInMonth = new Date(
-    year,
+    Number(monthStart.slice(0, 4)),
     month,
     0
   ).getDate();
-
-  const now = new Date();
-
-  let daysRemaining: number;
-
-  if (monthStart === currentMonthStart) {
-    daysRemaining =
-      daysInMonth - now.getDate() + 1;
-  } else if (monthStart > currentMonthStart) {
-    daysRemaining = daysInMonth;
-  } else {
-    daysRemaining = 0;
-  }
-
-  const baselinePerDay = calculateDailyBudget(
-    spendingAvailable,
-    daysInMonth
-  );
-
-  const remainingPerDay =
-    daysRemaining > 0
-      ? remaining / daysRemaining
-      : 0;
 
   // Category breakdown for the month.
   const spentByCategory = new Map<
@@ -413,7 +390,7 @@ export default async function DailySpendingPage({
           basePath="/daily-spending"
         />
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
             <p className="text-sm text-zinc-500">
               Spending Pool
@@ -441,28 +418,6 @@ export default async function DailySpendingPage({
 
             <p className="mt-2 text-2xl font-semibold">
               {formatCurrency(remaining)}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-zinc-500">
-              {daysRemaining > 0
-                ? "Left per day"
-                : "Baseline per day"}
-            </p>
-
-            <p className="mt-2 text-2xl font-semibold">
-              {formatCurrency(
-                Math.round(
-                  daysRemaining > 0
-                    ? remainingPerDay
-                    : baselinePerDay
-                )
-              )}
-
-              <span className="ml-1 text-sm font-normal text-zinc-500">
-                / day
-              </span>
             </p>
           </div>
         </section>
