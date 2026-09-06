@@ -556,7 +556,7 @@ export default function BudgetHeadEditor({
         </div>
 
         {/* Pay in full */}
-        <div className="flex flex-col items-end justify-start">
+        <div className="flex h-full flex-col items-end justify-center pt-2">
           {!editingPaid && (
             <>
               <button

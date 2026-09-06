@@ -183,7 +183,45 @@ export async function initializeMonthlyBudget(
     };
   }
 
-  const initialSalary = 0;
+  /*
+   * Seed the new month's salary.
+   *
+   * For the current or a future month, carry the salary
+   * forward from the most recent earlier month, so a salary
+   * set for the current month flows into future months as
+   * they are created. New users (no earlier month) start at 0.
+   *
+   * A newly created historical month always starts at 0 so it
+   * cannot pull a later salary backwards into the past.
+   */
+  const currentMonthStart =
+    `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  let initialSalary = 0;
+
+  if (monthStart >= currentMonthStart) {
+    const { data: priorBudget } =
+      await supabase
+        .from("monthly_budgets")
+        .select("salary")
+        .eq("user_id", user.id)
+        .lt("month_start", monthStart)
+        .order("month_start", {
+          ascending: false,
+        })
+        .limit(1)
+        .maybeSingle();
+
+    initialSalary = Number(
+      priorBudget?.salary ?? 0
+    );
+
+    if (!Number.isFinite(initialSalary)) {
+      initialSalary = 0;
+    }
+  }
 
   const {
     data: monthlyBudget,
@@ -290,21 +328,85 @@ export async function updateSalary(
     };
   }
 
-  const { error } = await supabase
+  /*
+   * Find the month being edited so we can decide how far
+   * forward the new salary should apply.
+   */
+  const {
+    data: editedBudget,
+    error: editedBudgetError,
+  } = await supabase
     .from("monthly_budgets")
-    .update({
-      salary,
-      updated_at:
-        new Date().toISOString(),
-    })
+    .select("id, month_start")
     .eq("id", monthlyBudgetId)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .single();
 
-  if (error) {
+  if (editedBudgetError || !editedBudget) {
     return {
       success: false,
-      error: error.message,
+      error:
+        editedBudgetError?.message ??
+        "Monthly budget could not be found.",
     };
+  }
+
+  const now = new Date();
+
+  const currentMonthStart =
+    `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+  const timestamp = new Date().toISOString();
+
+  if (
+    editedBudget.month_start < currentMonthStart
+  ) {
+    /*
+     * Editing a historical month only changes that month.
+     * Past salary history is never rewritten by a later edit,
+     * and it must not touch the current or future months.
+     */
+    const { error } = await supabase
+      .from("monthly_budgets")
+      .update({
+        salary,
+        updated_at: timestamp,
+      })
+      .eq("id", monthlyBudgetId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  } else {
+    /*
+     * Editing the current or a future month applies the new
+     * salary to that month and every later month that exists.
+     * Past months are left untouched.
+     */
+    const { error } = await supabase
+      .from("monthly_budgets")
+      .update({
+        salary,
+        updated_at: timestamp,
+      })
+      .eq("user_id", user.id)
+      .gte(
+        "month_start",
+        editedBudget.month_start
+      );
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
   }
 
   revalidatePath("/dashboard");

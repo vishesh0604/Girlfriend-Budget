@@ -16,11 +16,12 @@ CURRENT_STATE.md holds the detailed implementation status.
 - Renamed "Transfer" to "Move funds" across the whole app (button, form,
   history section, help text, error messages).
 - Tightened the budget-head card layout so the cards are more compact.
+- Salary edits now apply to the current month and every later month that
+  exists, and never change past months. New future months carry the
+  salary forward from the most recent earlier month.
 
 ## To Do
 
-- Salary changes should apply to the current and future months only, not
-  past months.
 - Update the /home help "?" to say the site only accounts for fixed
   monthly expenses, not day-to-day spending.
 - Add a help note / undo affordance for editing a fund move.
