@@ -7,6 +7,7 @@ import HelpButton from "../home/HelpButton";
 import HomeButton from "./HomeButton";
 import SpendingToolbar from "./SpendingToolbar";
 import SpendingEntryRow from "./SpendingEntryRow";
+import SpendingCreditRow from "./SpendingCreditRow";
 import { getSpendingSnapshot } from "./spendingSnapshot";
 import {
   ensureDefaultSpendingCategories,
@@ -204,7 +205,7 @@ export default async function DailySpendingPage({
   } = await supabase
     .from("spending_entries")
     .select(
-      "id, entry_date, amount, note, category_id, spending_categories (name)"
+      "id, entry_date, amount, note, category_id, created_at, spending_categories (name)"
     )
     .eq("user_id", user.id)
     .gte("entry_date", monthStart)
@@ -288,8 +289,73 @@ export default async function DailySpendingPage({
   );
 
   const totalSpent = snapshot.totalSpent;
-  const spendingAvailable = snapshot.spendingPool;
+  const spendingAvailable = snapshot.available;
   const remaining = snapshot.remaining;
+
+  const {
+    data: creditRows,
+    error: creditRowsError,
+  } = await supabase
+    .from("spending_credits")
+    .select(
+      "id, entry_date, amount, note, created_at"
+    )
+    .eq("user_id", user.id)
+    .gte("entry_date", monthStart)
+    .lt("entry_date", nextMonthStart)
+    .order("entry_date", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (creditRowsError) {
+    throw new Error(creditRowsError.message);
+  }
+
+  const credits = (creditRows ?? []).map(
+    (row) => ({
+      id: row.id as string,
+      entryDate: row.entry_date as string,
+      amount: Number(row.amount),
+      note: (row.note as string) ?? "",
+      createdAt:
+        (row.created_at as string) ?? "",
+    })
+  );
+
+  // One chronological feed of expenses (debits) and credits.
+  const activity = [
+    ...(entryRows ?? []).map((row) => ({
+      id: row.id as string,
+      kind: "expense" as const,
+      entryDate: row.entry_date as string,
+      createdAt:
+        (row.created_at as string) ?? "",
+    })),
+    ...credits.map((credit) => ({
+      id: credit.id,
+      kind: "credit" as const,
+      entryDate: credit.entryDate,
+      createdAt: credit.createdAt,
+    })),
+  ].sort((a, b) => {
+    if (a.entryDate !== b.entryDate) {
+      return a.entryDate < b.entryDate
+        ? 1
+        : -1;
+    }
+
+    return a.createdAt < b.createdAt ? 1 : -1;
+  });
+
+  const entryById = new Map(
+    entries.map((entry) => [entry.id, entry])
+  );
+
+  const creditById = new Map(
+    credits.map((credit) => [
+      credit.id,
+      credit,
+    ])
+  );
 
   // Existing "move remaining" records for this month.
   const {
@@ -415,7 +481,9 @@ export default async function DailySpendingPage({
                   <p className="mt-1">
                     Your salary minus your committed allocations
                     (from Fixed Expenses), plus anything carried
-                    forward from last month.
+                    forward from last month, plus any credits
+                    added this month. The Fixed Expenses page
+                    keeps showing the pool without credits.
                   </p>
                 </div>
 
@@ -434,9 +502,10 @@ export default async function DailySpendingPage({
                     Remaining
                   </p>
                   <p className="mt-1">
-                    Spending Pool minus what you have spent minus
-                    anything you have moved out. This is what is
-                    still available to spend this month.
+                    Spending Pool plus any credits, minus what you
+                    have spent and anything you have moved out.
+                    This is what is still available to spend this
+                    month.
                   </p>
                 </div>
 
@@ -447,6 +516,19 @@ export default async function DailySpendingPage({
                   <p className="mt-1">
                     Log a single expense with a day, a category,
                     an amount and an optional note.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Add credit
+                  </p>
+                  <p className="mt-1">
+                    Extra money to spend this month (a gift, a
+                    refund). It adds to what is available without
+                    changing your Spending Pool, and only affects
+                    the month it is logged in. Credits show in
+                    green in the Activity list.
                   </p>
                 </div>
 
@@ -498,11 +580,12 @@ export default async function DailySpendingPage({
 
                 <div>
                   <p className="font-semibold text-[#26354d]">
-                    Expenses
+                    Activity
                   </p>
                   <p className="mt-1">
-                    Every expense logged this month, newest first.
-                    Each one can be edited or deleted.
+                    Every expense and credit logged this month,
+                    newest first. Credits are shown in green. Each
+                    one can be edited or deleted.
                   </p>
                 </div>
               </div>
@@ -545,6 +628,14 @@ export default async function DailySpendingPage({
                   snapshot.carriedIn
                 )}{" "}
                 carried from last month
+              </p>
+            )}
+
+            {snapshot.credits > 0 && (
+              <p className="mt-1 text-xs font-medium text-emerald-700">
+                includes{" "}
+                {formatCurrency(snapshot.credits)}{" "}
+                credited this month
               </p>
             )}
           </div>
@@ -606,35 +697,67 @@ export default async function DailySpendingPage({
 
         <section className="mt-8">
           <h2 className="text-xl font-semibold">
-            Expenses
+            Activity
           </h2>
 
           <p className="mt-1 text-sm text-zinc-500">
-            Everything logged this month, newest first.
+            Expenses and credits this month, newest first.
           </p>
 
-          {entries.length === 0 ? (
+          {activity.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-5 py-8 text-center shadow-sm">
               <p className="text-sm text-zinc-500">
-                No expenses logged for this month yet.
-                Use{" "}
+                Nothing logged for this month yet. Use{" "}
                 <span className="font-medium text-zinc-700">
                   + Add expense
+                </span>{" "}
+                or{" "}
+                <span className="font-medium text-zinc-700">
+                  + Add credit
                 </span>{" "}
                 to start.
               </p>
             </div>
           ) : (
             <div className="mt-4 space-y-2">
-              {entries.map((entry) => (
-                <SpendingEntryRow
-                  key={entry.id}
-                  entry={entry}
-                  categories={categoryOptions}
-                  monthStart={monthStart}
-                  daysInMonth={daysInMonth}
-                />
-              ))}
+              {activity.map((item) => {
+                if (item.kind === "credit") {
+                  const credit = creditById.get(
+                    item.id
+                  );
+
+                  if (!credit) {
+                    return null;
+                  }
+
+                  return (
+                    <SpendingCreditRow
+                      key={`credit-${item.id}`}
+                      credit={credit}
+                      monthStart={monthStart}
+                      daysInMonth={daysInMonth}
+                    />
+                  );
+                }
+
+                const entry = entryById.get(
+                  item.id
+                );
+
+                if (!entry) {
+                  return null;
+                }
+
+                return (
+                  <SpendingEntryRow
+                    key={`expense-${item.id}`}
+                    entry={entry}
+                    categories={categoryOptions}
+                    monthStart={monthStart}
+                    daysInMonth={daysInMonth}
+                  />
+                );
+              })}
             </div>
           )}
         </section>

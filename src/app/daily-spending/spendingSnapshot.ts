@@ -31,8 +31,14 @@ export type SpendingSnapshot = {
   spendingPoolBase: number;
   /** Moved into this month from the previous month's pool. */
   carriedIn: number;
-  /** spendingPoolBase + carriedIn. */
+  /** spendingPoolBase + carriedIn (the base pool, before credits). */
   spendingPool: number;
+  /** Extra money credited to this month only. Daily Spending only - the
+   *  Fixed Expenses page never sees this. */
+  credits: number;
+  /** spendingPool + credits - the "Spending Pool" figure shown on the
+   *  Daily Spending page. */
+  available: number;
   totalSpent: number;
   /** This month's "move remaining" amounts (all destinations). */
   movedOut: number;
@@ -138,11 +144,25 @@ export async function getSpendingSnapshot(
     0
   );
 
+  const { data: creditRows } = await supabase
+    .from("spending_credits")
+    .select("amount")
+    .eq("user_id", userId)
+    .gte("entry_date", monthStart)
+    .lt("entry_date", nextMonthStart);
+
+  const credits = (creditRows ?? []).reduce(
+    (sum, row) => sum + Number(row.amount),
+    0
+  );
+
   const spendingPool =
     spendingPoolBase + carriedIn;
 
+  const available = spendingPool + credits;
+
   const remaining =
-    spendingPool - totalSpent - movedOut;
+    available - totalSpent - movedOut;
 
   return {
     monthlyBudgetId:
@@ -150,6 +170,8 @@ export async function getSpendingSnapshot(
     spendingPoolBase,
     carriedIn,
     spendingPool,
+    credits,
+    available,
     totalSpent,
     movedOut,
     remaining,

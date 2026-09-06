@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import AddExpenseButton from "./AddExpenseButton";
+import AddCreditButton from "./AddCreditButton";
 import SpendingCalendar from "./SpendingCalendar";
 import MoveRemainingButton from "./MoveRemainingButton";
 import ManageCategoriesButton from "./ManageCategoriesButton";
@@ -79,6 +80,14 @@ export default function SpendingToolbar(
     />
   );
 
+  const addCredit = (
+    <AddCreditButton
+      monthStart={monthStart}
+      daysInMonth={daysInMonth}
+      defaultDay={defaultDay}
+    />
+  );
+
   const secondary = (
     <>
       <SpendingCalendar
@@ -104,13 +113,14 @@ export default function SpendingToolbar(
 
   return (
     <>
-      {/* Desktop: all four inline, unchanged */}
+      {/* Desktop: all buttons inline */}
       <div className="hidden flex-wrap items-center gap-2 sm:flex">
         {addExpense}
+        {addCredit}
         {secondary}
       </div>
 
-      {/* Mobile: Add expense + a More menu */}
+      {/* Mobile: only Add expense outside; the rest under More */}
       <div className="relative flex items-center gap-2 sm:hidden">
         {addExpense}
 
@@ -136,6 +146,7 @@ export default function SpendingToolbar(
             />
 
             <div className="absolute right-0 top-[calc(100%+0.5rem)] z-40 flex min-w-[190px] flex-col items-stretch gap-2 rounded-2xl border border-[#f3b9cd] bg-[#ffdce9] p-2 shadow-xl [&>button]:w-full">
+              {addCredit}
               {secondary}
             </div>
           </>

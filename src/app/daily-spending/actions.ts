@@ -791,3 +791,197 @@ export async function deleteSpendingMove(
 
   return { success: true };
 }
+
+type SpendingCreditInput = {
+  entryDate: string;
+  amountValue: string;
+  note: string;
+};
+
+function validateSpendingCreditInput(
+  input: SpendingCreditInput
+) {
+  if (!isValidDate(input.entryDate)) {
+    return {
+      error: "Please choose a valid date.",
+    };
+  }
+
+  const amount = Number(input.amountValue);
+
+  if (!Number.isFinite(amount)) {
+    return {
+      error: "Amount must be a valid number.",
+    };
+  }
+
+  if (amount <= 0) {
+    return {
+      error: "Amount must be greater than ₹0.",
+    };
+  }
+
+  const note = input.note.trim();
+
+  if (note.length > MAX_ENTRY_NOTE_LENGTH) {
+    return {
+      error: `Note must be ${MAX_ENTRY_NOTE_LENGTH} characters or fewer.`,
+    };
+  }
+
+  return {
+    value: {
+      entry_date: input.entryDate,
+      amount,
+      note,
+    },
+  };
+}
+
+export async function createSpendingCredit(
+  entryDate: string,
+  amountValue: string,
+  note: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const validation =
+    validateSpendingCreditInput({
+      entryDate,
+      amountValue,
+      note,
+    });
+
+  if (!validation.value) {
+    return {
+      success: false,
+      error: validation.error,
+    };
+  }
+
+  const { error } = await supabase
+    .from("spending_credits")
+    .insert({
+      user_id: user.id,
+      ...validation.value,
+    });
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  revalidatePath("/daily-spending");
+
+  return { success: true };
+}
+
+export async function updateSpendingCredit(
+  creditId: string,
+  entryDate: string,
+  amountValue: string,
+  note: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const validation =
+    validateSpendingCreditInput({
+      entryDate,
+      amountValue,
+      note,
+    });
+
+  if (!validation.value) {
+    return {
+      success: false,
+      error: validation.error,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("spending_credits")
+    .update({
+      ...validation.value,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", creditId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      error: "This credit could not be found.",
+    };
+  }
+
+  revalidatePath("/daily-spending");
+
+  return { success: true };
+}
+
+export async function deleteSpendingCredit(
+  creditId: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("spending_credits")
+    .delete()
+    .eq("id", creditId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  revalidatePath("/daily-spending");
+
+  return { success: true };
+}

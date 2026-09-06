@@ -29,12 +29,17 @@ CURRENT_STATE.md holds the detailed implementation status.
 - Daily Spending Tracker (section 51) is fully built: Fixed Expenses
   rename + third home card; spending categories (seed / add / rename /
   delete); expense logging with the Spending Pool / Spent / Remaining
-  summary; a "Month overview" calendar popup; and "Move remaining"
-  (split freely between next month's pool and any Fixed head, with the
-  Fixed head receiving it as a transfer-in that lifts its balance and
-  the Current Account Balance without touching allocations). Per-day and
-  over/under-spending indicators were built then removed at the user's
-  request.
+  summary; a "Month overview" calendar popup; "Move remaining" (split
+  freely between next month's pool and any Fixed head, with the Fixed
+  head receiving it as a transfer-in that lifts its balance and the
+  Current Account Balance without touching allocations); and per-month
+  Credits (extra money in an "Activity" feed alongside expenses, shown
+  green, added to Available without changing the Spending Pool). Per-day
+  and over/under-spending indicators were built then removed at the
+  user's request.
+- Site-wide top loading strip (RefreshProvider in the root layout) shows
+  during any mutation's action + refresh. The Daily Spending header
+  actions collapse into a "More" menu on mobile.
 
 ## To Do
 
@@ -1359,9 +1364,11 @@ Each expense has exactly four fields:
 For a given month M:
 
     Spending Pool (M)  =  (Salary(M) - Committed(M))  +  carried in from M-1
+    Credits (M)        =  sum of credit amounts dated in M
+    Available (M)      =  Spending Pool(M) + Credits(M)
     Total spent (M)    =  sum of all expense amounts dated in M
     Moved out (M)      =  sum of "move remaining" amounts from M
-    Remaining (M)      =  Spending Pool(M) - Total spent(M) - Moved out(M)
+    Remaining (M)      =  Available(M) - Total spent(M) - Moved out(M)
 
 "Carried in from M-1" is derived from M-1's move-remaining records whose
 destination is "next month" - not a stored balance. Undoing a move is
@@ -1369,6 +1376,22 @@ deleting its record.
 
 Salary and Committed come from the Fixed Expenses side and are read-only
 here.
+
+## Credits
+
+A credit is extra money to spend in one month only - a gift, a refund.
+Fields: a day, an amount, an optional note. No category.
+
+- A credit adds to Available for its month. It never changes the Spending
+  Pool number shown in the UI, and it never carries into another month.
+- The summary keeps "Spending Pool" as (Salary - Committed + carried in),
+  with a green note "+ X credited this month" when there are credits.
+  Remaining reflects the credited total.
+- Credits appear in the same Activity feed as expenses, styled green
+  (the emerald accent used by Pay in full / Push remaining). Editable and
+  deletable like expenses.
+- Credits do NOT appear in the Month overview calendar or the "By
+  category" breakdown - those stay expense-only.
 
 ## Move remaining
 
@@ -1394,19 +1417,23 @@ was not wanted):
 
     Spending Pool (M)  =  (Salary(M) - Committed(M)) + carried in from M-1
     Spent (M)          =  sum of expense amounts dated in M
-    Remaining (M)      =  Spending Pool(M) - Spent(M) - Moved out(M)
+    Remaining (M)      =  Spending Pool(M) + Credits(M) - Spent(M) - Moved out(M)
+
+The Spending Pool card carries a "+ X credited this month" note when
+Credits(M) > 0.
 
 ## Page layout
 
 - Month navigator (shared component with Fixed Expenses)
-- "Manage categories" button, top
-- "+ Add expense" button, prominent
+- Toolbar: "+ Add expense" and "+ Add credit" always visible; "Month
+  overview", "Move remaining" and "Manage categories" alongside on
+  desktop, folded into a "More" menu on mobile
 - Summary: Spending Pool, Spent, Remaining
-- Calendar grid for the month: each day cell shows that day's total; tap a
-  day to view and add its expenses
-- Category breakdown: total spent per category for the month
-- Transactions list: newest first; each row shows category, amount, note,
-  date; each is editable and deletable
+- Calendar grid ("Month overview" popup): each day cell shows that day's
+  expense total; tap a day to view and add its expenses. Expense-only.
+- Category breakdown: total spent per category for the month. Expense-only.
+- Activity list: expenses and credits in one feed, newest first; each row
+  is editable and deletable. Expense rows baby-pink, credit rows green.
 - "Move remaining" action
 
 Historical months keep their transactions unchanged. Changing the current
@@ -1422,9 +1449,11 @@ month never rewrites past months.
 
 ## Data
 
-    spending_categories   id, user_id, name, is_active, created_at, updated_at
+    spending_categories   id, user_id, name, is_default, created_at, updated_at
     spending_entries      id, user_id, entry_date, category_id, amount,
                           note, created_at, updated_at
+    spending_credits      id, user_id, entry_date, amount, note,
+                          created_at, updated_at
     spending_moves        id, user_id, month_start, amount, destination_kind
                           ('next_month' | 'budget_head'),
                           destination_monthly_head_id (nullable), created_at
