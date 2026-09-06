@@ -147,12 +147,15 @@ textarea.border-zinc-200 {
 /*
  * Existing black buttons become a soft professional blue.
  */
-.bg-black {
+.bg-black,
+.bg-zinc-950 {
   background-color: var(--accent-blue) !important;
 }
 
 .bg-black:hover,
-.hover\:bg-black:hover {
+.hover\:bg-black:hover,
+.bg-zinc-950:hover,
+.hover\:bg-zinc-800:hover {
   background-color: var(--accent-blue-dark) !important;
 }
 

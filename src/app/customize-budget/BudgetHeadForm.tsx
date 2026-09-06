@@ -10,6 +10,7 @@ import {
   deactivateBudgetHead,
   deleteBudgetHead,
 } from "@/app/dashboard/actions";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type BudgetHead = {
   id: string;
@@ -58,6 +59,14 @@ export default function BudgetHeadForm({
 
   const [error, setError] =
     useState("");
+
+  const [
+    deactivateConfirmOpen,
+    setDeactivateConfirmOpen,
+  ] = useState(false);
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] =
+    useState(false);
 
   async function handleSave() {
     setError("");
@@ -114,15 +123,7 @@ export default function BudgetHeadForm({
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        `Deactivate "${budgetHead.name}"?\n\nIt will be removed from the current dashboard, but you can activate it again later.`
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
+    setDeactivateConfirmOpen(false);
     setError("");
     setIsSaving(true);
 
@@ -175,15 +176,7 @@ export default function BudgetHeadForm({
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        `Are you sure you want to permanently delete "${budgetHead.name}"?\n\nThis will permanently remove this budget head and its associated monthly records. This action cannot be undone.`
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
+    setDeleteConfirmOpen(false);
     setError("");
     setIsSaving(true);
 
@@ -293,7 +286,9 @@ export default function BudgetHeadForm({
       {isActive ? (
         <button
           type="button"
-          onClick={handleDeactivate}
+          onClick={() =>
+            setDeactivateConfirmOpen(true)
+          }
           disabled={isSaving}
           className="rounded-xl border border-[#f3b9cd] bg-[#ffe8f0] px-4 py-2 text-sm font-medium text-[#c4567d] transition hover:bg-[#ffdce9] disabled:opacity-50"
         >
@@ -312,7 +307,7 @@ export default function BudgetHeadForm({
 
       <button
         type="button"
-        onClick={handleDelete}
+        onClick={() => setDeleteConfirmOpen(true)}
         disabled={isSaving}
         className="rounded-xl border border-[#e4b4b4] bg-[#fff1f1] px-4 py-2 text-sm font-medium text-[#a94444] transition hover:bg-[#ffe4e4] disabled:opacity-50"
       >
@@ -324,6 +319,44 @@ export default function BudgetHeadForm({
           {error}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deactivateConfirmOpen}
+        title={
+          budgetHead
+            ? `Deactivate "${budgetHead.name}"?`
+            : "Deactivate budget head?"
+        }
+        message={
+          "It is removed from the current month's dashboard and from future months, but all of its past monthly history is kept. You can activate it again later."
+        }
+        confirmLabel="Deactivate"
+        busyLabel="Deactivating..."
+        tone="warning"
+        busy={isSaving}
+        onConfirm={handleDeactivate}
+        onCancel={() =>
+          setDeactivateConfirmOpen(false)
+        }
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title={
+          budgetHead
+            ? `Permanently delete "${budgetHead.name}"?`
+            : "Permanently delete budget head?"
+        }
+        message={
+          "This permanently removes the budget head and every monthly record and fund move linked to it, across all months. This cannot be undone."
+        }
+        confirmLabel="Delete permanently"
+        busyLabel="Deleting..."
+        tone="danger"
+        busy={isSaving}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
     </div>
   );
 }

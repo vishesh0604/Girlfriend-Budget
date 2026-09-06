@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+
 import { updateSalary } from "./actions";
 
 type SalaryEditorProps = {
@@ -12,6 +14,8 @@ export default function SalaryEditor({
   monthlyBudgetId,
   salary,
 }: SalaryEditorProps) {
+  const router = useRouter();
+
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(String(salary));
   const [error, setError] = useState("");
@@ -58,6 +62,7 @@ export default function SalaryEditor({
     }
 
     setEditing(false);
+    router.refresh();
   }
 
   return (

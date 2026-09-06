@@ -1254,7 +1254,9 @@ export async function reversePushToNextMonth(
     error: currentHeadError,
   } = await supabase
     .from("monthly_budget_heads")
-    .select("id, budget_head_id")
+    .select(
+      "id, budget_head_id, carry_forward"
+    )
     .eq("id", monthlyHeadId)
     .eq("user_id", user.id)
     .eq("monthly_budget_id", currentBudget.id)
@@ -1269,6 +1271,42 @@ export async function reversePushToNextMonth(
     };
   }
 
+  /*
+   * If THIS month's head has a carry-forward, it received a
+   * push from the previous month. Reversing from the month
+   * where the amount is visible clears it here.
+   */
+  if (
+    Number(currentHead.carry_forward) > 0
+  ) {
+    const { error: clearError } =
+      await supabase
+        .from("monthly_budget_heads")
+        .update({
+          carry_forward: 0,
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("id", currentHead.id)
+        .eq("user_id", user.id);
+
+    if (clearError) {
+      return {
+        success: false,
+        error: clearError.message,
+      };
+    }
+
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      reversedMonthStart:
+        currentBudget.month_start,
+    };
+  }
+
+  // Otherwise reverse the push this month made forward.
   // Calculate the immediately next month.
   const [year, month] =
     currentBudget.month_start
@@ -1402,6 +1440,69 @@ export async function reverseAllPushesToNextMonth(
     };
   }
 
+  /*
+   * If THIS month has any carry-forward, it received pushes
+   * from the previous month. Reversing from the month where
+   * those amounts are visible clears them here.
+   */
+  const {
+    data: currentHeads,
+    error: currentHeadsError,
+  } = await supabase
+    .from("monthly_budget_heads")
+    .select("carry_forward")
+    .eq("user_id", user.id)
+    .eq(
+      "monthly_budget_id",
+      currentBudget.id
+    );
+
+  if (currentHeadsError) {
+    return {
+      success: false,
+      error: currentHeadsError.message,
+    };
+  }
+
+  const currentMonthHasCarryForward = (
+    currentHeads ?? []
+  ).some(
+    (head) =>
+      Number(head.carry_forward) > 0
+  );
+
+  if (currentMonthHasCarryForward) {
+    const { error: clearError } =
+      await supabase
+        .from("monthly_budget_heads")
+        .update({
+          carry_forward: 0,
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("user_id", user.id)
+        .eq(
+          "monthly_budget_id",
+          currentBudget.id
+        );
+
+    if (clearError) {
+      return {
+        success: false,
+        error: clearError.message,
+      };
+    }
+
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      reversedMonthStart:
+        currentBudget.month_start,
+    };
+  }
+
+  // Otherwise reverse the pushes this month made forward.
   // Calculate the immediately next month.
   const [year, month] =
     currentBudget.month_start

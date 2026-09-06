@@ -11,6 +11,7 @@ import {
   undoTransfer,
 } from "./actions";
 import { calculateMaximumPaidAmount } from "@/lib/supabase/budget/calculations";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type TransferOption = {
   id: string;
@@ -75,6 +76,12 @@ export default function BudgetHeadEditor({
     useState(false);
 
   const [undoingTransfer, setUndoingTransfer] =
+    useState(false);
+
+  const [undoConfirmOpen, setUndoConfirmOpen] =
+    useState(false);
+
+  const [clearConfirmOpen, setClearConfirmOpen] =
     useState(false);
 
   const [clearedTransferId, setClearedTransferId] =
@@ -171,6 +178,7 @@ export default function BudgetHeadEditor({
     }
 
     setEditingAllocation(false);
+    router.refresh();
   }
 
   async function handlePaidSave() {
@@ -191,6 +199,7 @@ export default function BudgetHeadEditor({
     }
 
     setEditingPaid(false);
+    router.refresh();
   }
 
   async function handleNoteSave() {
@@ -275,6 +284,7 @@ export default function BudgetHeadEditor({
     setTransferAmount("");
     setTransferDestination("");
     setTransferring(false);
+    router.refresh();
   }
 
   async function handleUndoTransfer() {
@@ -282,20 +292,7 @@ export default function BudgetHeadEditor({
       return;
     }
 
-    const confirmed = window.confirm(
-      `Undo this fund move?\n\n₹${recentTransfer.amount.toLocaleString(
-        "en-IN"
-      )} ${
-        recentTransfer.direction === "out"
-          ? `from ${name} to ${recentTransfer.otherHeadName}`
-          : `from ${recentTransfer.otherHeadName} to ${name}`
-      }\n\nThis will restore the balances to their previous state.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+    setUndoConfirmOpen(false);
     setUndoError("");
     setUndoingTransfer(true);
 
@@ -330,19 +327,7 @@ export default function BudgetHeadEditor({
       return;
     }
 
-    const confirmed = window.confirm(
-      `Clear this recent move from the card?\n\n₹${recentTransfer.amount.toLocaleString(
-        "en-IN"
-      )} ${
-        recentTransfer.direction === "out"
-          ? `from ${name} to ${recentTransfer.otherHeadName}`
-          : `from ${recentTransfer.otherHeadName} to ${name}`
-      }\n\nThe fund move itself will NOT be removed. Your balances and the summary card will remain unchanged.\n\nYou won't be able to restore this move information to this card after clearing it.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
+    setClearConfirmOpen(false);
 
     const storageKey =
       `budget-cleared-transfer-${monthlyHeadId}`;
@@ -620,7 +605,9 @@ export default function BudgetHeadEditor({
               <div className="flex shrink-0 items-center gap-3">
                 <button
                   type="button"
-                  onClick={handleUndoTransfer}
+                  onClick={() =>
+                    setUndoConfirmOpen(true)
+                  }
                   disabled={undoingTransfer}
                   className="text-xs font-medium text-zinc-500 underline underline-offset-4 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
                 >
@@ -631,8 +618,8 @@ export default function BudgetHeadEditor({
 
                 <button
                   type="button"
-                  onClick={
-                    handleClearRecentTransfer
+                  onClick={() =>
+                    setClearConfirmOpen(true)
                   }
                   disabled={undoingTransfer}
                   className="text-xs font-medium text-zinc-400 underline underline-offset-4 hover:text-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-300"
@@ -853,6 +840,48 @@ export default function BudgetHeadEditor({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={undoConfirmOpen}
+        title="Undo this fund move?"
+        message={
+          recentTransfer
+            ? `₹${recentTransfer.amount.toLocaleString(
+                "en-IN"
+              )} ${
+                recentTransfer.direction === "out"
+                  ? `from ${name} to ${recentTransfer.otherHeadName}`
+                  : `from ${recentTransfer.otherHeadName} to ${name}`
+              }\n\nThis restores both budget heads to their balances before the move.`
+            : ""
+        }
+        confirmLabel="Undo move"
+        busyLabel="Undoing..."
+        tone="warning"
+        busy={undoingTransfer}
+        onConfirm={handleUndoTransfer}
+        onCancel={() => setUndoConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={clearConfirmOpen}
+        title="Clear this move from the card?"
+        message={
+          recentTransfer
+            ? `₹${recentTransfer.amount.toLocaleString(
+                "en-IN"
+              )} ${
+                recentTransfer.direction === "out"
+                  ? `from ${name} to ${recentTransfer.otherHeadName}`
+                  : `from ${recentTransfer.otherHeadName} to ${name}`
+              }\n\nThe move itself is NOT removed and balances do not change — this only hides it from this card. You cannot bring it back to the card afterwards.`
+            : ""
+        }
+        confirmLabel="Clear from card"
+        tone="danger"
+        onConfirm={handleClearRecentTransfer}
+        onCancel={() => setClearConfirmOpen(false)}
+      />
     </div>
   );
 }

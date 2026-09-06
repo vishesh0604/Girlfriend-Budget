@@ -19,9 +19,18 @@ CURRENT_STATE.md holds the detailed implementation status.
 - Salary edits now apply to the current month and every later month that
   exists, and never change past months. New future months carry the
   salary forward from the most recent earlier month.
+- Confirmation prompts (undo a move, clear a move from a card, deactivate
+  or delete a budget head) use the app's own styled dialog instead of the
+  browser's native popup.
+- Reverse Push now clears the carried-forward amount from whichever month
+  it is visible in, so it can be undone from the receiving month, not
+  only from the month the push was made.
+- Save buttons on the inline editors use the app's blue instead of black.
 
 ## To Do
 
+- Show carried-forward money on the budget-head card (a "Carried over"
+  line, shown only when it is non-zero, with an inline Undo).
 - Update the /home help "?" to say the site only accounts for fixed
   monthly expenses, not day-to-day spending.
 - Add a help note / undo affordance for editing a fund move.

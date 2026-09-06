@@ -392,9 +392,10 @@ export default function PushRemainingButton({
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-zinc-500">
-              This will remove the pushed amounts from
-              the selected budget heads in the next month
-              and restore their carry-forward to ₹0.
+              This removes the carried-forward amount for
+              the selected budget heads and restores their
+              balances. Allocations and Paid / Used are not
+              affected.
             </p>
 
             <div className="mt-5 flex justify-end gap-2">
@@ -432,10 +433,11 @@ export default function PushRemainingButton({
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-zinc-500">
-              This will remove{" "}
-              <strong>all carry-forward amounts</strong>{" "}
-              from the next month for every budget head.
-              Your current month will not be changed.
+              This removes{" "}
+              <strong>every carried-forward amount</strong>{" "}
+              created by Push Remaining for every budget
+              head. Allocations and Paid / Used are not
+              affected.
             </p>
 
             <div className="mt-5 flex justify-end gap-2">
