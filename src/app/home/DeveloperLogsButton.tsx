@@ -84,7 +84,7 @@ export default function DeveloperLogsButton() {
                       </div>
 
                       <span className="shrink-0 text-xs text-[#647086]">
-                        12:32 AM
+                        6:23 PM
                       </span>
                     </div>
 
