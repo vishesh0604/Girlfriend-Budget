@@ -5,11 +5,8 @@ import { initializeMonthlyBudget } from "../dashboard/actions";
 import MonthNavigator from "../dashboard/MonthNavigator";
 import HelpButton from "../home/HelpButton";
 import HomeButton from "./HomeButton";
-import ManageCategoriesButton from "./ManageCategoriesButton";
-import AddExpenseButton from "./AddExpenseButton";
-import SpendingCalendar from "./SpendingCalendar";
+import SpendingToolbar from "./SpendingToolbar";
 import SpendingEntryRow from "./SpendingEntryRow";
-import MoveRemainingButton from "./MoveRemainingButton";
 import { getSpendingSnapshot } from "./spendingSnapshot";
 import {
   ensureDefaultSpendingCategories,
@@ -512,33 +509,18 @@ export default async function DailySpendingPage({
             </HelpButton>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <AddExpenseButton
-              categories={categoryOptions}
-              monthStart={monthStart}
-              daysInMonth={daysInMonth}
-              defaultDay={defaultDay}
-            />
-
-            <SpendingCalendar
-              entries={entries}
-              categories={categoryOptions}
-              monthStart={monthStart}
-              daysInMonth={daysInMonth}
-              todayDay={todayDay}
-            />
-
-            <MoveRemainingButton
-              monthStart={monthStart}
-              remaining={remaining}
-              fixedHeads={fixedHeads}
-              moves={moves}
-            />
-
-            <ManageCategoriesButton
-              categories={categoryList}
-            />
-          </div>
+          <SpendingToolbar
+            monthStart={monthStart}
+            daysInMonth={daysInMonth}
+            defaultDay={defaultDay}
+            todayDay={todayDay}
+            remaining={remaining}
+            categoryOptions={categoryOptions}
+            categoryList={categoryList}
+            entries={entries}
+            fixedHeads={fixedHeads}
+            moves={moves}
+          />
         </div>
 
         <MonthNavigator
