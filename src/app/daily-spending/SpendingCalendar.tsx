@@ -61,8 +61,7 @@ export default function SpendingCalendar({
 }: SpendingCalendarProps) {
   const router = useRouter();
 
-  const { refreshing, runRefresh } =
-    useRefresh();
+  const { runRefresh } = useRefresh();
 
   const [open, setOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<
@@ -75,10 +74,8 @@ export default function SpendingCalendar({
   );
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-
-  const busy = saving || refreshing;
 
   const year = Number(monthStart.slice(0, 4));
   const month = Number(monthStart.slice(5, 7));
@@ -143,43 +140,53 @@ export default function SpendingCalendar({
   }
 
   function closeDay() {
-    if (busy) {
-      return;
-    }
-
     setSelectedDay(null);
   }
 
-  async function handleAdd() {
-    if (selectedDay === null) {
+  function handleAdd() {
+    if (selectedDay === null || pending) {
       return;
     }
 
-    setError("");
-    setSaving(true);
-
-    const result = await createSpendingEntry(
-      buildEntryDate(monthStart, selectedDay),
+    const payload = {
+      date: buildEntryDate(
+        monthStart,
+        selectedDay
+      ),
       categoryId,
       amount,
-      note
-    );
+      note,
+    };
 
-    if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to add expense."
-      );
-      setSaving(false);
-      return;
-    }
-
-    setSaving(false);
+    // Collapse the form now; the write and refresh happen behind the
+    // top strip and the new row drops into the day's list a beat later.
+    setError("");
     setAmount("");
     setNote("");
     setAdding(false);
+    setPending(true);
 
-    runRefresh(() => {
+    runRefresh(async () => {
+      const result = await createSpendingEntry(
+        payload.date,
+        payload.categoryId,
+        payload.amount,
+        payload.note
+      );
+
+      setPending(false);
+
+      if (!result.success) {
+        setError(
+          result.error ??
+            "Unable to add expense."
+        );
+        setAmount(payload.amount);
+        setNote(payload.note);
+        setAdding(true);
+        return;
+      }
+
       router.refresh();
     });
   }
@@ -375,15 +382,11 @@ export default function SpendingCalendar({
                     type="button"
                     onClick={handleAdd}
                     disabled={
-                      busy || !amount.trim()
+                      pending || !amount.trim()
                     }
                     className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
                   >
-                    {saving
-                      ? "Adding..."
-                      : refreshing
-                      ? "Updating..."
-                      : "Add"}
+                    Add
                   </button>
 
                   <button
@@ -391,8 +394,7 @@ export default function SpendingCalendar({
                     onClick={() =>
                       setAdding(false)
                     }
-                    disabled={busy}
-                    className="rounded-lg border border-[#f3b9cd] px-3 py-1.5 text-xs font-medium text-[#647086] hover:bg-[#ffdce9] disabled:cursor-not-allowed disabled:text-zinc-400"
+                    className="rounded-lg border border-[#f3b9cd] px-3 py-1.5 text-xs font-medium text-[#647086] hover:bg-[#ffdce9]"
                   >
                     Cancel
                   </button>
@@ -412,8 +414,7 @@ export default function SpendingCalendar({
               <button
                 type="button"
                 onClick={closeDay}
-                disabled={busy}
-                className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0] disabled:cursor-not-allowed disabled:text-zinc-400"
+                className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0]"
               >
                 Done
               </button>

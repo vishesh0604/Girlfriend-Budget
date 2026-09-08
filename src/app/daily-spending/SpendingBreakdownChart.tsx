@@ -216,13 +216,9 @@ function ChartModal({
       .slice(0, index)
       .reduce((sum, value) => sum + value, 0);
 
-    const fullLength =
+    // No gap - slices butt straight up against each other.
+    const dashLength =
       fractions[index] * CIRCUMFERENCE;
-    // A 2px gap between fills, but never eat a thin slice whole.
-    const dashLength = Math.max(
-      fullLength - 2,
-      fullLength > 0 ? 1 : 0
-    );
 
     return {
       key: slice.key,

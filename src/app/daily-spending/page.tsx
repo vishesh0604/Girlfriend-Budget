@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUserId } from "@/lib/supabase/authUser";
 import { initializeMonthlyBudget } from "../dashboard/actions";
 import MonthNavigator from "../dashboard/MonthNavigator";
 import HelpButton from "../home/HelpButton";
@@ -61,11 +62,9 @@ export default async function DailySpendingPage({
 }: DailySpendingPageProps) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     redirect("/");
   }
 
@@ -82,39 +81,111 @@ export default async function DailySpendingPage({
 
   const nextMonthStart = addMonth(monthStart);
 
-  const seedResult =
-    await ensureDefaultSpendingCategories();
-
-  if (!seedResult.success) {
-    throw new Error(
-      seedResult.error ??
-        "Unable to prepare your spending categories."
-    );
-  }
-
   /*
-   * The spending pool comes from the Fixed Expenses side
-   * (salary minus committed). Make sure the month exists for
-   * the current or a future month; leave past months alone.
+   * One round-trip of latency instead of a dozen: everything that only
+   * needs the signed-in user and the month is fetched together. The
+   * spending pool itself comes from the Fixed Expenses side (salary
+   * minus committed) via getSpendingSnapshot.
    */
-  const {
-    data: existingBudget,
-    error: existingBudgetError,
-  } = await supabase
-    .from("monthly_budgets")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("month_start", monthStart)
-    .maybeSingle();
+  const [
+    categoriesResult,
+    entryRowsResult,
+    allEntryCategoryResult,
+    creditRowsResult,
+    moveRowsResult,
+    initialSnapshot,
+  ] = await Promise.all([
+    supabase
+      .from("spending_categories")
+      .select("id, name, is_default, color")
+      .eq("user_id", userId)
+      .order("is_default", { ascending: true })
+      .order("name", { ascending: true }),
+    supabase
+      .from("spending_entries")
+      .select(
+        "id, entry_date, amount, note, category_id, created_at, spending_categories (name)"
+      )
+      .eq("user_id", userId)
+      .gte("entry_date", monthStart)
+      .lt("entry_date", nextMonthStart)
+      .order("entry_date", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("spending_entries")
+      .select("category_id")
+      .eq("user_id", userId),
+    supabase
+      .from("spending_credits")
+      .select(
+        "id, entry_date, amount, note, created_at"
+      )
+      .eq("user_id", userId)
+      .gte("entry_date", monthStart)
+      .lt("entry_date", nextMonthStart)
+      .order("entry_date", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("spending_moves")
+      .select(
+        "id, amount, destination_kind, destination_monthly_head_id, created_at"
+      )
+      .eq("user_id", userId)
+      .eq("month_start", monthStart)
+      .order("created_at", { ascending: false }),
+    getSpendingSnapshot(
+      supabase,
+      userId,
+      monthStart
+    ),
+  ]);
 
-  if (existingBudgetError) {
-    throw new Error(
-      existingBudgetError.message
-    );
+  for (const result of [
+    categoriesResult,
+    entryRowsResult,
+    allEntryCategoryResult,
+    creditRowsResult,
+    moveRowsResult,
+  ]) {
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
   }
+
+  // First-ever visit: seed the starter categories, then re-read them.
+  let categories = categoriesResult.data ?? [];
+
+  if (categories.length === 0) {
+    const seedResult =
+      await ensureDefaultSpendingCategories();
+
+    if (!seedResult.success) {
+      throw new Error(
+        seedResult.error ??
+          "Unable to prepare your spending categories."
+      );
+    }
+
+    const reread = await supabase
+      .from("spending_categories")
+      .select("id, name, is_default, color")
+      .eq("user_id", userId)
+      .order("is_default", { ascending: true })
+      .order("name", { ascending: true });
+
+    if (reread.error) {
+      throw new Error(reread.error.message);
+    }
+
+    categories = reread.data ?? [];
+  }
+
+  // First visit to a current or future month: create its budget row,
+  // then recompute the snapshot against it.
+  let snapshot = initialSnapshot;
 
   if (
-    !existingBudget &&
+    !snapshot.monthlyBudgetId &&
     monthStart >= currentMonthStart
   ) {
     const initResult =
@@ -126,13 +197,19 @@ export default async function DailySpendingPage({
           "Unable to prepare this month."
       );
     }
+
+    snapshot = await getSpendingSnapshot(
+      supabase,
+      userId,
+      monthStart
+    );
   }
 
-  const snapshot = await getSpendingSnapshot(
-    supabase,
-    user.id,
-    monthStart
-  );
+  const entryRows = entryRowsResult.data ?? [];
+  const allEntryCategoryRows =
+    allEntryCategoryResult.data ?? [];
+  const creditRows = creditRowsResult.data ?? [];
+  const moveRows = moveRowsResult.data ?? [];
 
   // Active fixed-expense heads for this month, as targets for
   // "move remaining".
@@ -150,7 +227,7 @@ export default async function DailySpendingPage({
       .select(
         "id, budget_heads (name, is_active)"
       )
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq(
         "monthly_budget_id",
         snapshot.monthlyBudgetId
@@ -184,52 +261,6 @@ export default async function DailySpendingPage({
         id: head.id,
         name: head.name,
       }));
-  }
-
-  const {
-    data: categories,
-    error: categoriesError,
-  } = await supabase
-    .from("spending_categories")
-    .select("id, name, is_default, color")
-    .eq("user_id", user.id)
-    .order("is_default", { ascending: true })
-    .order("name", { ascending: true });
-
-  if (categoriesError) {
-    throw new Error(categoriesError.message);
-  }
-
-  const {
-    data: entryRows,
-    error: entryRowsError,
-  } = await supabase
-    .from("spending_entries")
-    .select(
-      "id, entry_date, amount, note, category_id, created_at, spending_categories (name)"
-    )
-    .eq("user_id", user.id)
-    .gte("entry_date", monthStart)
-    .lt("entry_date", nextMonthStart)
-    .order("entry_date", { ascending: false })
-    .order("created_at", { ascending: false });
-
-  if (entryRowsError) {
-    throw new Error(entryRowsError.message);
-  }
-
-  const {
-    data: allEntryCategoryRows,
-    error: allEntryCategoryError,
-  } = await supabase
-    .from("spending_entries")
-    .select("category_id")
-    .eq("user_id", user.id);
-
-  if (allEntryCategoryError) {
-    throw new Error(
-      allEntryCategoryError.message
-    );
   }
 
   const entryCountByCategory = new Map<
@@ -307,24 +338,6 @@ export default async function DailySpendingPage({
   const spendingAvailable = snapshot.available;
   const remaining = snapshot.remaining;
 
-  const {
-    data: creditRows,
-    error: creditRowsError,
-  } = await supabase
-    .from("spending_credits")
-    .select(
-      "id, entry_date, amount, note, created_at"
-    )
-    .eq("user_id", user.id)
-    .gte("entry_date", monthStart)
-    .lt("entry_date", nextMonthStart)
-    .order("entry_date", { ascending: false })
-    .order("created_at", { ascending: false });
-
-  if (creditRowsError) {
-    throw new Error(creditRowsError.message);
-  }
-
   const credits = (creditRows ?? []).map(
     (row) => ({
       id: row.id as string,
@@ -372,23 +385,7 @@ export default async function DailySpendingPage({
     ])
   );
 
-  // Existing "move remaining" records for this month.
-  const {
-    data: moveRows,
-    error: moveRowsError,
-  } = await supabase
-    .from("spending_moves")
-    .select(
-      "id, amount, destination_kind, destination_monthly_head_id, created_at"
-    )
-    .eq("user_id", user.id)
-    .eq("month_start", monthStart)
-    .order("created_at", { ascending: false });
-
-  if (moveRowsError) {
-    throw new Error(moveRowsError.message);
-  }
-
+  // Existing "move remaining" records for this month (fetched above).
   const fixedHeadNameById = new Map(
     fixedHeads.map((head) => [
       head.id,

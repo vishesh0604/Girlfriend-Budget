@@ -54,19 +54,21 @@ export default function SpendingEntryRow({
 }: SpendingEntryRowProps) {
   const router = useRouter();
 
-  const { refreshing, runRefresh } =
-    useRefresh();
+  const { runRefresh } = useRefresh();
+
+  // Optimistic overlays: what the row shows before the server catches up.
+  const [localEntry, setLocalEntry] =
+    useState<SpendingEntry | null>(null);
+  const [removed, setRemoved] = useState(false);
+
+  const displayEntry = localEntry ?? entry;
 
   const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   const [confirmOpen, setConfirmOpen] =
     useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  const busy =
-    saving || deleting || refreshing;
 
   const monthLabel =
     MONTH_NAMES[
@@ -79,84 +81,126 @@ export default function SpendingEntryRow({
   );
 
   const [day, setDay] = useState(
-    String(dayFromEntryDate(entry.entryDate))
+    String(
+      dayFromEntryDate(displayEntry.entryDate)
+    )
   );
   const [categoryId, setCategoryId] = useState(
-    entry.categoryId
+    displayEntry.categoryId
   );
   const [amount, setAmount] = useState(
-    String(entry.amount)
+    String(displayEntry.amount)
   );
-  const [note, setNote] = useState(entry.note);
+  const [note, setNote] = useState(
+    displayEntry.note
+  );
 
   function startEdit() {
     setDay(
       String(
-        dayFromEntryDate(entry.entryDate)
+        dayFromEntryDate(displayEntry.entryDate)
       )
     );
-    setCategoryId(entry.categoryId);
-    setAmount(String(entry.amount));
-    setNote(entry.note);
+    setCategoryId(displayEntry.categoryId);
+    setAmount(String(displayEntry.amount));
+    setNote(displayEntry.note);
     setError("");
     setEditing(true);
   }
 
-  async function handleSave() {
-    setError("");
-    setSaving(true);
-
-    const result = await updateSpendingEntry(
-      entry.id,
-      buildEntryDate(
-        monthStart,
-        Number(day)
-      ),
-      categoryId,
-      amount,
-      note
-    );
-
-    if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to update expense."
-      );
-      setSaving(false);
+  function handleSave() {
+    if (pending) {
       return;
     }
 
-    setSaving(false);
-    setEditing(false);
+    const nextDate = buildEntryDate(
+      monthStart,
+      Number(day)
+    );
+    const nextCategory = categories.find(
+      (category) => category.id === categoryId
+    );
 
-    runRefresh(() => {
+    const previous = localEntry;
+    const categoryChanged =
+      categoryId !== displayEntry.categoryId;
+
+    // Show the edit straight away, then reconcile in the background.
+    setLocalEntry({
+      ...displayEntry,
+      entryDate: nextDate,
+      categoryId,
+      categoryName:
+        nextCategory?.name ??
+        displayEntry.categoryName,
+      // Colour isn't known here - let the refresh fill it in.
+      categoryColor: categoryChanged
+        ? null
+        : displayEntry.categoryColor,
+      amount: Number(amount),
+      note: note.trim(),
+    });
+    setError("");
+    setEditing(false);
+    setPending(true);
+
+    runRefresh(async () => {
+      const result =
+        await updateSpendingEntry(
+          entry.id,
+          nextDate,
+          categoryId,
+          amount,
+          note
+        );
+
+      setPending(false);
+
+      if (!result.success) {
+        setLocalEntry(previous);
+        setError(
+          result.error ??
+            "Unable to update expense."
+        );
+        setEditing(true);
+        return;
+      }
+
       router.refresh();
     });
   }
 
-  async function handleDelete() {
-    setDeleting(true);
-
-    const result = await deleteSpendingEntry(
-      entry.id
-    );
-
-    if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to delete expense."
-      );
-      setDeleting(false);
-      setConfirmOpen(false);
+  function handleDelete() {
+    if (pending) {
       return;
     }
 
-    setDeleting(false);
     setConfirmOpen(false);
+    setRemoved(true);
+    setError("");
+    setPending(true);
 
-    runRefresh(() => {
+    runRefresh(async () => {
+      const result =
+        await deleteSpendingEntry(entry.id);
+
+      setPending(false);
+
+      if (!result.success) {
+        setRemoved(false);
+        setError(
+          result.error ??
+            "Unable to delete expense."
+        );
+        return;
+      }
+
       router.refresh();
     });
+  }
+
+  if (removed) {
+    return null;
   }
 
   if (editing) {
@@ -230,21 +274,16 @@ export default function SpendingEntryRow({
           <button
             type="button"
             onClick={handleSave}
-            disabled={busy}
+            disabled={pending || !amount.trim()}
             className="rounded-lg bg-zinc-950 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
           >
-            {saving
-              ? "Saving..."
-              : refreshing
-              ? "Updating..."
-              : "Save"}
+            Save
           </button>
 
           <button
             type="button"
             onClick={() => setEditing(false)}
-            disabled={busy}
-            className="rounded-lg border border-[#f3b9cd] px-3 py-1.5 text-xs font-medium text-[#647086] hover:bg-[#ffdce9] disabled:cursor-not-allowed disabled:text-zinc-400"
+            className="rounded-lg border border-[#f3b9cd] px-3 py-1.5 text-xs font-medium text-[#647086] hover:bg-[#ffdce9]"
           >
             Cancel
           </button>
@@ -258,40 +297,42 @@ export default function SpendingEntryRow({
       <div className="flex items-center justify-between gap-3 rounded-xl border border-[#f3b9cd] bg-[#ffe8f0] px-3 py-2.5">
         <div className="flex min-w-0 items-baseline gap-2">
           <span className="shrink-0 text-xs text-[#647086]">
-            {formatEntryDate(entry.entryDate)}
+            {formatEntryDate(
+              displayEntry.entryDate
+            )}
           </span>
 
           <span
             className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-              entry.categoryColor
+              displayEntry.categoryColor
                 ? ""
                 : "bg-[#cfeeff] text-[#3978a5]"
             }`}
             style={
-              entry.categoryColor
+              displayEntry.categoryColor
                 ? {
                     backgroundColor:
-                      entry.categoryColor,
+                      displayEntry.categoryColor,
                     color: readableTextOn(
-                      entry.categoryColor
+                      displayEntry.categoryColor
                     ),
                   }
                 : undefined
             }
           >
-            {entry.categoryName}
+            {displayEntry.categoryName}
           </span>
 
-          {entry.note && (
+          {displayEntry.note && (
             <span className="truncate text-sm text-[#26354d]">
-              {entry.note}
+              {displayEntry.note}
             </span>
           )}
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
           <span className="text-sm font-semibold text-[#26354d]">
-            {formatCurrency(entry.amount)}
+            {formatCurrency(displayEntry.amount)}
           </span>
 
           <button
@@ -312,18 +353,25 @@ export default function SpendingEntryRow({
         </div>
       </div>
 
+      {error && (
+        <p className="mt-1 px-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
+
       <ConfirmDialog
         open={confirmOpen}
         title="Delete this expense?"
         message={`${formatCurrency(
-          entry.amount
-        )} · ${entry.categoryName}${
-          entry.note ? ` · ${entry.note}` : ""
+          displayEntry.amount
+        )} · ${displayEntry.categoryName}${
+          displayEntry.note
+            ? ` · ${displayEntry.note}`
+            : ""
         }\n\nThis removes the expense from your spending log.`}
         confirmLabel="Delete expense"
         busyLabel="Deleting..."
         tone="danger"
-        busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setConfirmOpen(false)}
       />

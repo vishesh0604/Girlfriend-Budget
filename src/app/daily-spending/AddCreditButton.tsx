@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useRefresh } from "@/components/RefreshProvider";
@@ -24,22 +24,11 @@ export default function AddCreditButton({
 }: AddCreditButtonProps) {
   const router = useRouter();
 
-  const { refreshing, runRefresh } =
-    useRefresh();
+  const { runRefresh } = useRefresh();
 
   const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-
-  const busy = saving || closing;
-
-  useEffect(() => {
-    if (closing && !refreshing) {
-      setOpen(false);
-      setClosing(false);
-    }
-  }, [closing, refreshing]);
 
   const monthLabel =
     MONTH_NAMES[
@@ -66,39 +55,46 @@ export default function AddCreditButton({
   }
 
   function handleClose() {
-    if (busy) {
-      return;
-    }
-
     setOpen(false);
   }
 
-  async function handleSave() {
-    setError("");
-    setSaving(true);
+  function handleSave() {
+    if (pending) {
+      return;
+    }
 
-    const result = await createSpendingCredit(
-      buildEntryDate(
+    const payload = {
+      date: buildEntryDate(
         monthStart,
         Number(day)
       ),
       amount,
-      note
-    );
+      note,
+    };
 
-    if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to add credit."
-      );
-      setSaving(false);
-      return;
-    }
+    setError("");
+    setPending(true);
+    setOpen(false);
 
-    setSaving(false);
-    setClosing(true);
+    runRefresh(async () => {
+      const result =
+        await createSpendingCredit(
+          payload.date,
+          payload.amount,
+          payload.note
+        );
 
-    runRefresh(() => {
+      setPending(false);
+
+      if (!result.success) {
+        setError(
+          result.error ??
+            "Unable to add credit."
+        );
+        setOpen(true);
+        return;
+      }
+
       router.refresh();
     });
   }
@@ -206,8 +202,7 @@ export default function AddCreditButton({
               <button
                 type="button"
                 onClick={handleClose}
-                disabled={busy}
-                className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0] disabled:cursor-not-allowed disabled:text-zinc-400"
+                className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0]"
               >
                 Cancel
               </button>
@@ -215,14 +210,12 @@ export default function AddCreditButton({
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={busy || !amount.trim()}
+                disabled={
+                  pending || !amount.trim()
+                }
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
               >
-                {saving
-                  ? "Adding..."
-                  : closing
-                  ? "Updating..."
-                  : "Add credit"}
+                Add credit
               </button>
             </div>
           </div>

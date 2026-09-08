@@ -44,22 +44,18 @@ export default function MoveRemainingButton({
 }: MoveRemainingButtonProps) {
   const router = useRouter();
 
-  const { refreshing, runRefresh } =
-    useRefresh();
+  const { runRefresh } = useRefresh();
 
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [destination, setDestination] = useState(
     NEXT_MONTH_VALUE
   );
-  const [saving, setSaving] = useState(false);
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   const [undoTarget, setUndoTarget] =
     useState<ExistingMove | null>(null);
-  const [undoing, setUndoing] = useState(false);
-
-  const busy = saving || undoing || refreshing;
 
   function handleOpen() {
     setOpen(true);
@@ -69,71 +65,77 @@ export default function MoveRemainingButton({
   }
 
   function handleClose() {
-    if (busy) {
-      return;
-    }
-
     setOpen(false);
   }
 
-  async function handleMove() {
-    setError("");
-    setSaving(true);
-
-    const isHead =
-      destination !== NEXT_MONTH_VALUE;
-
-    const result = await createSpendingMove(
-      monthStart,
-      amount,
-      isHead
-        ? "budget_head"
-        : "next_month",
-      isHead ? destination : null
-    );
-
-    if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to move the money."
-      );
-      setSaving(false);
+  function handleMove() {
+    if (pending) {
       return;
     }
 
-    setSaving(false);
-    setAmount("");
+    const isHead =
+      destination !== NEXT_MONTH_VALUE;
+    const payload = {
+      amount,
+      kind: isHead
+        ? ("budget_head" as const)
+        : ("next_month" as const),
+      head: isHead ? destination : null,
+    };
 
-    runRefresh(() => {
+    setError("");
+    setAmount("");
+    setPending(true);
+
+    runRefresh(async () => {
+      const result = await createSpendingMove(
+        monthStart,
+        payload.amount,
+        payload.kind,
+        payload.head
+      );
+
+      setPending(false);
+
+      if (!result.success) {
+        setError(
+          result.error ??
+            "Unable to move the money."
+        );
+        setAmount(payload.amount);
+        return;
+      }
+
       router.refresh();
     });
   }
 
-  async function handleUndo() {
-    if (!undoTarget) {
+  function handleUndo() {
+    if (!undoTarget || pending) {
       return;
     }
 
-    setUndoing(true);
+    const id = undoTarget.id;
 
-    const result = await deleteSpendingMove(
-      undoTarget.id
-    );
-
-    if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to undo the move."
-      );
-      setUndoing(false);
-      setUndoTarget(null);
-      return;
-    }
-
-    setUndoing(false);
     setUndoTarget(null);
+    setError("");
+    setPending(true);
 
-    runRefresh(() => {
+    runRefresh(async () => {
+      const result = await deleteSpendingMove(
+        id
+      );
+
+      setPending(false);
+
+      if (!result.success) {
+        setError(
+          result.error ??
+            "Unable to undo the move."
+        );
+        return;
+      }
+
       router.refresh();
     });
   }
@@ -200,8 +202,7 @@ export default function MoveRemainingButton({
                       onClick={() =>
                         setUndoTarget(move)
                       }
-                      disabled={busy}
-                      className="shrink-0 text-xs font-medium text-[#a94444] underline underline-offset-4 hover:text-[#7a2f2f] disabled:cursor-not-allowed disabled:text-zinc-400"
+                      className="shrink-0 text-xs font-medium text-[#a94444] underline underline-offset-4 hover:text-[#7a2f2f]"
                     >
                       Undo
                     </button>
@@ -268,17 +269,13 @@ export default function MoveRemainingButton({
                 type="button"
                 onClick={handleMove}
                 disabled={
-                  busy ||
+                  pending ||
                   !amount.trim() ||
                   remaining <= 0
                 }
                 className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
               >
-                {saving
-                  ? "Moving..."
-                  : refreshing
-                  ? "Updating..."
-                  : "Move"}
+                Move
               </button>
             </div>
 
@@ -286,8 +283,7 @@ export default function MoveRemainingButton({
               <button
                 type="button"
                 onClick={handleClose}
-                disabled={busy}
-                className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0] disabled:cursor-not-allowed disabled:text-zinc-400"
+                className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0]"
               >
                 Done
               </button>
@@ -311,7 +307,6 @@ export default function MoveRemainingButton({
         confirmLabel="Undo move"
         busyLabel="Undoing..."
         tone="warning"
-        busy={undoing}
         onConfirm={handleUndo}
         onCancel={() => setUndoTarget(null)}
       />

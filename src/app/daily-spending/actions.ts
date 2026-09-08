@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getSpendingSnapshot } from "./spendingSnapshot";
+import { getAuthUserId } from "@/lib/supabase/authUser";
 import { isValidCategoryColor } from "./categoryColors";
 
 const DEFAULT_CATEGORIES = [
@@ -53,11 +54,9 @@ function isValidDate(value: string) {
 export async function ensureDefaultSpendingCategories() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -70,7 +69,7 @@ export async function ensureDefaultSpendingCategories() {
   } = await supabase
     .from("spending_categories")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .limit(1);
 
   if (existingError) {
@@ -86,12 +85,12 @@ export async function ensureDefaultSpendingCategories() {
 
   const rows = [
     ...DEFAULT_CATEGORIES.map((name) => ({
-      user_id: user.id,
+      user_id: userId,
       name,
       is_default: false,
     })),
     {
-      user_id: user.id,
+      user_id: userId,
       name: FALLBACK_CATEGORY_NAME,
       is_default: true,
     },
@@ -120,11 +119,9 @@ export async function createSpendingCategory(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -153,7 +150,7 @@ export async function createSpendingCategory(
   } = await supabase
     .from("spending_categories")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .ilike("name", trimmed);
 
   if (duplicatesError) {
@@ -173,7 +170,7 @@ export async function createSpendingCategory(
   const { error } = await supabase
     .from("spending_categories")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       name: trimmed,
       is_default: false,
     });
@@ -197,11 +194,9 @@ export async function updateSpendingCategory(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -243,7 +238,7 @@ export async function updateSpendingCategory(
   } = await supabase
     .from("spending_categories")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .ilike("name", trimmed)
     .neq("id", categoryId);
 
@@ -269,7 +264,7 @@ export async function updateSpendingCategory(
       updated_at: new Date().toISOString(),
     })
     .eq("id", categoryId)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .select("id")
     .maybeSingle();
 
@@ -297,11 +292,9 @@ export async function deleteSpendingCategory(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -315,7 +308,7 @@ export async function deleteSpendingCategory(
     .from("spending_categories")
     .select("id, is_default")
     .eq("id", categoryId)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (categoryError || !category) {
@@ -341,7 +334,7 @@ export async function deleteSpendingCategory(
   } = await supabase
     .from("spending_categories")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("is_default", true)
     .maybeSingle();
 
@@ -364,7 +357,7 @@ export async function deleteSpendingCategory(
       category_id: fallback.id,
       updated_at: new Date().toISOString(),
     })
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("category_id", categoryId);
 
   if (reassignError) {
@@ -378,7 +371,7 @@ export async function deleteSpendingCategory(
     .from("spending_categories")
     .delete()
     .eq("id", categoryId)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (deleteError) {
     return {
@@ -472,11 +465,9 @@ export async function createSpendingEntry(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -486,7 +477,7 @@ export async function createSpendingEntry(
   const validation =
     await validateSpendingEntryInput(
       supabase,
-      user.id,
+      userId,
       { entryDate, categoryId, amountValue, note }
     );
 
@@ -500,7 +491,7 @@ export async function createSpendingEntry(
   const { error } = await supabase
     .from("spending_entries")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       ...validation.value,
     });
 
@@ -525,11 +516,9 @@ export async function updateSpendingEntry(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -539,7 +528,7 @@ export async function updateSpendingEntry(
   const validation =
     await validateSpendingEntryInput(
       supabase,
-      user.id,
+      userId,
       { entryDate, categoryId, amountValue, note }
     );
 
@@ -557,7 +546,7 @@ export async function updateSpendingEntry(
       updated_at: new Date().toISOString(),
     })
     .eq("id", entryId)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .select("id")
     .maybeSingle();
 
@@ -585,11 +574,9 @@ export async function deleteSpendingEntry(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -600,7 +587,7 @@ export async function deleteSpendingEntry(
     .from("spending_entries")
     .delete()
     .eq("id", entryId)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (error) {
     return {
@@ -626,11 +613,9 @@ export async function createSpendingMove(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -686,7 +671,7 @@ export async function createSpendingMove(
     } = await supabase
       .from("monthly_budgets")
       .select("id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("month_start", monthStart)
       .maybeSingle();
 
@@ -712,7 +697,7 @@ export async function createSpendingMove(
       .from("monthly_budget_heads")
       .select("id")
       .eq("id", destinationMonthlyHeadId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("monthly_budget_id", budget.id)
       .maybeSingle();
 
@@ -736,7 +721,7 @@ export async function createSpendingMove(
 
   const snapshot = await getSpendingSnapshot(
     supabase,
-    user.id,
+    userId,
     monthStart
   );
 
@@ -752,7 +737,7 @@ export async function createSpendingMove(
   const { error } = await supabase
     .from("spending_moves")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       month_start: monthStart,
       amount,
       destination_kind: destinationKind,
@@ -778,11 +763,9 @@ export async function deleteSpendingMove(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -793,7 +776,7 @@ export async function deleteSpendingMove(
     .from("spending_moves")
     .delete()
     .eq("id", moveId)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (error) {
     return {
@@ -861,11 +844,9 @@ export async function createSpendingCredit(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -889,7 +870,7 @@ export async function createSpendingCredit(
   const { error } = await supabase
     .from("spending_credits")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       ...validation.value,
     });
 
@@ -913,11 +894,9 @@ export async function updateSpendingCredit(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -945,7 +924,7 @@ export async function updateSpendingCredit(
       updated_at: new Date().toISOString(),
     })
     .eq("id", creditId)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .select("id")
     .maybeSingle();
 
@@ -973,11 +952,9 @@ export async function deleteSpendingCredit(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return {
       success: false,
       error: "You must be signed in.",
@@ -988,7 +965,7 @@ export async function deleteSpendingCredit(
     .from("spending_credits")
     .delete()
     .eq("id", creditId)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (error) {
     return {

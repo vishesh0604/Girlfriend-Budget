@@ -71,10 +71,16 @@ export async function getSpendingSnapshot(
     .eq("month_start", monthStart)
     .maybeSingle();
 
-  let committedAmount = 0;
-
-  if (monthlyBudget) {
-    const { data: heads } = await supabase
+  // Everything past the monthly-budget lookup is independent - fire it
+  // all at once rather than one round-trip after another.
+  const [
+    { data: heads },
+    { data: carryRows },
+    { data: entryRows },
+    { data: moveRows },
+    { data: creditRows },
+  ] = await Promise.all([
+    supabase
       .from("monthly_budget_heads")
       .select(
         "allocated_amount, budget_heads (head_type)"
@@ -82,74 +88,69 @@ export async function getSpendingSnapshot(
       .eq("user_id", userId)
       .eq(
         "monthly_budget_id",
-        monthlyBudget.id
-      );
+        monthlyBudget?.id ??
+          "00000000-0000-0000-0000-000000000000"
+      ),
+    supabase
+      .from("spending_moves")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("month_start", previousMonthStart)
+      .eq("destination_kind", "next_month"),
+    supabase
+      .from("spending_entries")
+      .select("amount")
+      .eq("user_id", userId)
+      .gte("entry_date", monthStart)
+      .lt("entry_date", nextMonthStart),
+    supabase
+      .from("spending_moves")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("month_start", monthStart),
+    supabase
+      .from("spending_credits")
+      .select("amount")
+      .eq("user_id", userId)
+      .gte("entry_date", monthStart)
+      .lt("entry_date", nextMonthStart),
+  ]);
 
-    committedAmount = calculateCommittedAmount(
-      (heads ?? []).map((head) => {
-        const budgetHead = Array.isArray(
-          head.budget_heads
-        )
-          ? head.budget_heads[0]
-          : head.budget_heads;
+  const committedAmount = calculateCommittedAmount(
+    (heads ?? []).map((head) => {
+      const budgetHead = Array.isArray(
+        head.budget_heads
+      )
+        ? head.budget_heads[0]
+        : head.budget_heads;
 
-        return {
-          amount: Number(
-            head.allocated_amount
-          ),
-          headType:
-            budgetHead?.head_type ?? "other",
-        };
-      })
-    );
-  }
+      return {
+        amount: Number(head.allocated_amount),
+        headType:
+          budgetHead?.head_type ?? "other",
+      };
+    })
+  );
 
   const spendingPoolBase = calculateSpendingPool(
     Number(monthlyBudget?.salary ?? 0),
     committedAmount
   );
 
-  const { data: carryRows } = await supabase
-    .from("spending_moves")
-    .select("amount")
-    .eq("user_id", userId)
-    .eq("month_start", previousMonthStart)
-    .eq("destination_kind", "next_month");
-
   const carriedIn = (carryRows ?? []).reduce(
     (sum, row) => sum + Number(row.amount),
     0
   );
-
-  const { data: entryRows } = await supabase
-    .from("spending_entries")
-    .select("amount")
-    .eq("user_id", userId)
-    .gte("entry_date", monthStart)
-    .lt("entry_date", nextMonthStart);
 
   const totalSpent = (entryRows ?? []).reduce(
     (sum, row) => sum + Number(row.amount),
     0
   );
 
-  const { data: moveRows } = await supabase
-    .from("spending_moves")
-    .select("amount")
-    .eq("user_id", userId)
-    .eq("month_start", monthStart);
-
   const movedOut = (moveRows ?? []).reduce(
     (sum, row) => sum + Number(row.amount),
     0
   );
-
-  const { data: creditRows } = await supabase
-    .from("spending_credits")
-    .select("amount")
-    .eq("user_id", userId)
-    .gte("entry_date", monthStart)
-    .lt("entry_date", nextMonthStart);
 
   const credits = (creditRows ?? []).reduce(
     (sum, row) => sum + Number(row.amount),

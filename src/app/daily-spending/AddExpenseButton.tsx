@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useRefresh } from "@/components/RefreshProvider";
@@ -31,24 +31,11 @@ export default function AddExpenseButton({
 }: AddExpenseButtonProps) {
   const router = useRouter();
 
-  const { refreshing, runRefresh } =
-    useRefresh();
+  const { runRefresh } = useRefresh();
 
   const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-
-  const busy = saving || closing;
-
-  // Keep the modal open until the post-save refresh finishes,
-  // then close it (feedback stays where the user is looking).
-  useEffect(() => {
-    if (closing && !refreshing) {
-      setOpen(false);
-      setClosing(false);
-    }
-  }, [closing, refreshing]);
 
   const monthLabel =
     MONTH_NAMES[
@@ -79,40 +66,49 @@ export default function AddExpenseButton({
   }
 
   function handleClose() {
-    if (busy) {
-      return;
-    }
-
     setOpen(false);
   }
 
-  async function handleSave() {
-    setError("");
-    setSaving(true);
+  function handleSave() {
+    if (pending) {
+      return;
+    }
 
-    const result = await createSpendingEntry(
-      buildEntryDate(
+    const payload = {
+      date: buildEntryDate(
         monthStart,
         Number(day)
       ),
       categoryId,
       amount,
-      note
-    );
+      note,
+    };
 
-    if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to add expense."
+    // Close now; the write and the refresh happen in the background
+    // with just the top strip. Re-open only if the server rejects it.
+    setError("");
+    setPending(true);
+    setOpen(false);
+
+    runRefresh(async () => {
+      const result = await createSpendingEntry(
+        payload.date,
+        payload.categoryId,
+        payload.amount,
+        payload.note
       );
-      setSaving(false);
-      return;
-    }
 
-    setSaving(false);
-    setClosing(true);
+      setPending(false);
 
-    runRefresh(() => {
+      if (!result.success) {
+        setError(
+          result.error ??
+            "Unable to add expense."
+        );
+        setOpen(true);
+        return;
+      }
+
       router.refresh();
     });
   }
@@ -239,8 +235,7 @@ export default function AddExpenseButton({
               <button
                 type="button"
                 onClick={handleClose}
-                disabled={busy}
-                className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0] disabled:cursor-not-allowed disabled:text-zinc-400"
+                className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0]"
               >
                 Cancel
               </button>
@@ -249,17 +244,13 @@ export default function AddExpenseButton({
                 type="button"
                 onClick={handleSave}
                 disabled={
-                  busy ||
+                  pending ||
                   !amount.trim() ||
                   !categoryId
                 }
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
               >
-                {saving
-                  ? "Adding..."
-                  : closing
-                  ? "Updating..."
-                  : "Add expense"}
+                Add expense
               </button>
             </div>
           </div>

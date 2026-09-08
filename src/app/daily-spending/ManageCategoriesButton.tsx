@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useRefresh } from "@/components/RefreshProvider";
 import {
   createSpendingCategory,
   updateSpendingCategory,
@@ -31,10 +32,12 @@ export default function ManageCategoriesButton({
 }: ManageCategoriesButtonProps) {
   const router = useRouter();
 
+  const { runRefresh } = useRefresh();
+
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   const [newName, setNewName] = useState("");
-  const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
   const [editingId, setEditingId] = useState<
@@ -44,18 +47,45 @@ export default function ManageCategoriesButton({
   const [editColor, setEditColor] = useState<
     string | null
   >(null);
-  const [savingEdit, setSavingEdit] =
-    useState(false);
   const [editError, setEditError] = useState("");
 
   const [deleteTarget, setDeleteTarget] =
     useState<Category | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] =
     useState("");
 
-  const busy =
-    adding || savingEdit || deleting;
+  // Optimistic overlays so the list reacts the instant you act, while
+  // the write + refresh run in the background.
+  const [nameColorOverrides, setNameColorOverrides] =
+    useState<
+      Record<
+        string,
+        { name: string; color: string | null }
+      >
+    >({});
+  const [addedTemp, setAddedTemp] = useState<
+    Category[]
+  >([]);
+  const [removedIds, setRemovedIds] = useState<
+    string[]
+  >([]);
+
+  const displayCategories: Category[] = [
+    ...categories,
+    ...addedTemp,
+  ]
+    .filter(
+      (category) =>
+        !removedIds.includes(category.id)
+    )
+    .map((category) => {
+      const override =
+        nameColorOverrides[category.id];
+
+      return override
+        ? { ...category, ...override }
+        : category;
+    });
 
   function handleOpen() {
     setOpen(true);
@@ -68,33 +98,58 @@ export default function ManageCategoriesButton({
   }
 
   function handleClose() {
-    if (busy) {
-      return;
-    }
-
     setOpen(false);
   }
 
-  async function handleAdd() {
-    setAddError("");
-    setAdding(true);
+  function handleAdd() {
+    const name = newName.trim();
 
-    const result = await createSpendingCategory(
-      newName
-    );
-
-    if (!result.success) {
-      setAddError(
-        result.error ??
-          "Unable to add category."
-      );
-      setAdding(false);
+    if (!name || pending) {
       return;
     }
 
+    const tempId = `temp-${Date.now()}`;
+
+    setAddedTemp((current) => [
+      ...current,
+      {
+        id: tempId,
+        name,
+        isDefault: false,
+        color: null,
+        entryCount: 0,
+      },
+    ]);
     setNewName("");
-    setAdding(false);
-    router.refresh();
+    setAddError("");
+    setPending(true);
+
+    runRefresh(async () => {
+      const result =
+        await createSpendingCategory(name);
+
+      setPending(false);
+
+      if (!result.success) {
+        setAddedTemp((current) =>
+          current.filter(
+            (item) => item.id !== tempId
+          )
+        );
+        setAddError(
+          result.error ??
+            "Unable to add category."
+        );
+        return;
+      }
+
+      router.refresh();
+      setAddedTemp((current) =>
+        current.filter(
+          (item) => item.id !== tempId
+        )
+      );
+    });
   }
 
   function startEdit(category: Category) {
@@ -104,60 +159,86 @@ export default function ManageCategoriesButton({
     setEditError("");
   }
 
-  async function handleSaveEdit() {
-    if (!editingId) {
+  function handleSaveEdit() {
+    if (!editingId || pending) {
       return;
     }
 
-    setEditError("");
-    setSavingEdit(true);
+    const id = editingId;
+    const name = editName.trim();
+    const color = editColor;
 
-    const result =
-      await updateSpendingCategory(
-        editingId,
-        editName,
-        editColor
-      );
-
-    if (!result.success) {
-      setEditError(
-        result.error ??
-          "Unable to update category."
-      );
-      setSavingEdit(false);
-      return;
-    }
-
+    setNameColorOverrides((current) => ({
+      ...current,
+      [id]: { name, color },
+    }));
     setEditingId(null);
-    setSavingEdit(false);
-    router.refresh();
+    setEditError("");
+    setPending(true);
+
+    runRefresh(async () => {
+      const result =
+        await updateSpendingCategory(
+          id,
+          editName,
+          color
+        );
+
+      setPending(false);
+
+      if (!result.success) {
+        setNameColorOverrides((current) => {
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
+        setEditError(
+          result.error ??
+            "Unable to update category."
+        );
+        return;
+      }
+
+      router.refresh();
+    });
   }
 
-  async function handleDelete() {
-    if (!deleteTarget) {
+  function handleDelete() {
+    if (!deleteTarget || pending) {
       return;
     }
 
-    setDeleteError("");
-    setDeleting(true);
+    const id = deleteTarget.id;
 
-    const result =
-      await deleteSpendingCategory(
-        deleteTarget.id
-      );
-
-    if (!result.success) {
-      setDeleteError(
-        result.error ??
-          "Unable to delete category."
-      );
-      setDeleting(false);
-      return;
-    }
-
+    setRemovedIds((current) => [
+      ...current,
+      id,
+    ]);
     setDeleteTarget(null);
-    setDeleting(false);
-    router.refresh();
+    setDeleteError("");
+    setPending(true);
+
+    runRefresh(async () => {
+      const result =
+        await deleteSpendingCategory(id);
+
+      setPending(false);
+
+      if (!result.success) {
+        setRemovedIds((current) =>
+          current.filter(
+            (value) => value !== id
+          )
+        );
+        setDeleteError(
+          result.error ??
+            "Unable to delete category."
+        );
+        return;
+      }
+
+      router.refresh();
+    });
   }
 
   return (
@@ -217,12 +298,10 @@ export default function ManageCategoriesButton({
                   <button
                     type="button"
                     onClick={handleAdd}
-                    disabled={
-                      busy || !newName.trim()
-                    }
+                    disabled={!newName.trim()}
                     className="shrink-0 rounded-lg bg-zinc-950 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
                   >
-                    {adding ? "Adding..." : "Add"}
+                    Add
                   </button>
                 </div>
 
@@ -235,14 +314,22 @@ export default function ManageCategoriesButton({
 
               {/* List */}
               <div className="mt-5 space-y-2">
-                {categories.map((category) => {
+                {displayCategories.map((category) => {
                   const isEditing =
                     editingId === category.id;
+                  const isTemp =
+                    category.id.startsWith(
+                      "temp-"
+                    );
 
                   return (
                     <div
                       key={category.id}
-                      className="rounded-xl border border-[#f3b9cd] bg-[#ffe8f0] px-3 py-2.5"
+                      className={`rounded-xl border border-[#f3b9cd] bg-[#ffe8f0] px-3 py-2.5 ${
+                        isTemp
+                          ? "opacity-60"
+                          : ""
+                      }`}
                     >
                       {isEditing ? (
                         <div>
@@ -324,12 +411,12 @@ export default function ManageCategoriesButton({
                               onClick={
                                 handleSaveEdit
                               }
-                              disabled={busy}
+                              disabled={
+                                !editName.trim()
+                              }
                               className="rounded-lg bg-zinc-950 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
                             >
-                              {savingEdit
-                                ? "Saving..."
-                                : "Save"}
+                              Save
                             </button>
 
                             <button
@@ -342,8 +429,7 @@ export default function ManageCategoriesButton({
                                   ""
                                 );
                               }}
-                              disabled={busy}
-                              className="rounded-lg border border-[#f3b9cd] px-3 py-1.5 text-xs font-medium text-[#647086] hover:bg-[#ffdce9] disabled:cursor-not-allowed disabled:text-zinc-400"
+                              className="rounded-lg border border-[#f3b9cd] px-3 py-1.5 text-xs font-medium text-[#647086] hover:bg-[#ffdce9]"
                             >
                               Cancel
                             </button>
@@ -387,36 +473,37 @@ export default function ManageCategoriesButton({
                           </div>
 
                           <div className="flex shrink-0 items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                startEdit(
-                                  category
-                                )
-                              }
-                              disabled={busy}
-                              className="text-xs font-medium text-[#3978a5] underline underline-offset-4 hover:text-[#26354d] disabled:cursor-not-allowed disabled:text-zinc-400"
-                            >
-                              Edit
-                            </button>
-
-                            {!category.isDefault && (
+                            {!isTemp && (
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setDeleteError(
-                                    ""
-                                  );
-                                  setDeleteTarget(
+                                onClick={() =>
+                                  startEdit(
                                     category
-                                  );
-                                }}
-                                disabled={busy}
-                                className="text-xs font-medium text-[#a94444] underline underline-offset-4 hover:text-[#7a2f2f] disabled:cursor-not-allowed disabled:text-zinc-400"
+                                  )
+                                }
+                                className="text-xs font-medium text-[#3978a5] underline underline-offset-4 hover:text-[#26354d]"
                               >
-                                Delete
+                                Edit
                               </button>
                             )}
+
+                            {!category.isDefault &&
+                              !isTemp && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDeleteError(
+                                      ""
+                                    );
+                                    setDeleteTarget(
+                                      category
+                                    );
+                                  }}
+                                  className="text-xs font-medium text-[#a94444] underline underline-offset-4 hover:text-[#7a2f2f]"
+                                >
+                                  Delete
+                                </button>
+                              )}
                           </div>
                         </div>
                       )}
@@ -435,8 +522,7 @@ export default function ManageCategoriesButton({
                 <button
                   type="button"
                   onClick={handleClose}
-                  disabled={busy}
-                  className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0] disabled:cursor-not-allowed disabled:text-zinc-400"
+                  className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0]"
                 >
                   Done
                 </button>
@@ -465,7 +551,6 @@ export default function ManageCategoriesButton({
         confirmLabel="Delete category"
         busyLabel="Deleting..."
         tone="danger"
-        busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />

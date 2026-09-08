@@ -43,19 +43,20 @@ export default function SpendingCreditRow({
 }: SpendingCreditRowProps) {
   const router = useRouter();
 
-  const { refreshing, runRefresh } =
-    useRefresh();
+  const { runRefresh } = useRefresh();
+
+  const [localCredit, setLocalCredit] =
+    useState<SpendingCredit | null>(null);
+  const [removed, setRemoved] = useState(false);
+
+  const displayCredit = localCredit ?? credit;
 
   const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   const [confirmOpen, setConfirmOpen] =
     useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  const busy =
-    saving || deleting || refreshing;
 
   const monthLabel =
     MONTH_NAMES[
@@ -68,79 +69,108 @@ export default function SpendingCreditRow({
   );
 
   const [day, setDay] = useState(
-    String(dayFromEntryDate(credit.entryDate))
+    String(
+      dayFromEntryDate(displayCredit.entryDate)
+    )
   );
   const [amount, setAmount] = useState(
-    String(credit.amount)
+    String(displayCredit.amount)
   );
-  const [note, setNote] = useState(credit.note);
+  const [note, setNote] = useState(
+    displayCredit.note
+  );
 
   function startEdit() {
     setDay(
       String(
-        dayFromEntryDate(credit.entryDate)
+        dayFromEntryDate(
+          displayCredit.entryDate
+        )
       )
     );
-    setAmount(String(credit.amount));
-    setNote(credit.note);
+    setAmount(String(displayCredit.amount));
+    setNote(displayCredit.note);
     setError("");
     setEditing(true);
   }
 
-  async function handleSave() {
-    setError("");
-    setSaving(true);
-
-    const result = await updateSpendingCredit(
-      credit.id,
-      buildEntryDate(
-        monthStart,
-        Number(day)
-      ),
-      amount,
-      note
-    );
-
-    if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to update credit."
-      );
-      setSaving(false);
+  function handleSave() {
+    if (pending) {
       return;
     }
 
-    setSaving(false);
-    setEditing(false);
+    const nextDate = buildEntryDate(
+      monthStart,
+      Number(day)
+    );
+    const previous = localCredit;
 
-    runRefresh(() => {
+    setLocalCredit({
+      ...displayCredit,
+      entryDate: nextDate,
+      amount: Number(amount),
+      note: note.trim(),
+    });
+    setError("");
+    setEditing(false);
+    setPending(true);
+
+    runRefresh(async () => {
+      const result =
+        await updateSpendingCredit(
+          credit.id,
+          nextDate,
+          amount,
+          note
+        );
+
+      setPending(false);
+
+      if (!result.success) {
+        setLocalCredit(previous);
+        setError(
+          result.error ??
+            "Unable to update credit."
+        );
+        setEditing(true);
+        return;
+      }
+
       router.refresh();
     });
   }
 
-  async function handleDelete() {
-    setDeleting(true);
-
-    const result = await deleteSpendingCredit(
-      credit.id
-    );
-
-    if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to delete credit."
-      );
-      setDeleting(false);
-      setConfirmOpen(false);
+  function handleDelete() {
+    if (pending) {
       return;
     }
 
-    setDeleting(false);
     setConfirmOpen(false);
+    setRemoved(true);
+    setError("");
+    setPending(true);
 
-    runRefresh(() => {
+    runRefresh(async () => {
+      const result =
+        await deleteSpendingCredit(credit.id);
+
+      setPending(false);
+
+      if (!result.success) {
+        setRemoved(false);
+        setError(
+          result.error ??
+            "Unable to delete credit."
+        );
+        return;
+      }
+
       router.refresh();
     });
+  }
+
+  if (removed) {
+    return null;
   }
 
   if (editing) {
@@ -197,21 +227,16 @@ export default function SpendingCreditRow({
           <button
             type="button"
             onClick={handleSave}
-            disabled={busy}
+            disabled={pending || !amount.trim()}
             className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-400"
           >
-            {saving
-              ? "Saving..."
-              : refreshing
-              ? "Updating..."
-              : "Save"}
+            Save
           </button>
 
           <button
             type="button"
             onClick={() => setEditing(false)}
-            disabled={busy}
-            className="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:text-zinc-400"
+            className="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
           >
             Cancel
           </button>
@@ -225,23 +250,26 @@ export default function SpendingCreditRow({
       <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
         <div className="flex min-w-0 items-baseline gap-2">
           <span className="shrink-0 text-xs text-emerald-700/80">
-            {formatEntryDate(credit.entryDate)}
+            {formatEntryDate(
+              displayCredit.entryDate
+            )}
           </span>
 
           <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
             Credit
           </span>
 
-          {credit.note && (
+          {displayCredit.note && (
             <span className="truncate text-sm text-emerald-800">
-              {credit.note}
+              {displayCredit.note}
             </span>
           )}
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
           <span className="text-sm font-semibold text-emerald-700">
-            + {formatCurrency(credit.amount)}
+            +{" "}
+            {formatCurrency(displayCredit.amount)}
           </span>
 
           <button
@@ -262,20 +290,25 @@ export default function SpendingCreditRow({
         </div>
       </div>
 
+      {error && (
+        <p className="mt-1 px-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
+
       <ConfirmDialog
         open={confirmOpen}
         title="Delete this credit?"
         message={`+ ${formatCurrency(
-          credit.amount
+          displayCredit.amount
         )}${
-          credit.note
-            ? ` · ${credit.note}`
+          displayCredit.note
+            ? ` · ${displayCredit.note}`
             : ""
         }\n\nThis removes the credit and lowers what's available to spend this month.`}
         confirmLabel="Delete credit"
         busyLabel="Deleting..."
         tone="danger"
-        busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setConfirmOpen(false)}
       />

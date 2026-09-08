@@ -11,8 +11,15 @@ import {
 type RefreshValue = {
   /** True while a shared refresh transition is in flight. */
   refreshing: boolean;
-  /** Run work (usually router.refresh()) inside the shared transition. */
-  runRefresh: (work: () => void) => void;
+  /**
+   * Run work inside the shared transition. The work may be async (an
+   * await'd server action followed by router.refresh()) - the top strip
+   * stays up until it settles, but the caller's UI is free to update
+   * straight away rather than waiting on it.
+   */
+  runRefresh: (
+    work: () => void | Promise<void>
+  ) => void;
 };
 
 const RefreshContext =
@@ -32,7 +39,7 @@ export function RefreshProvider({
     useTransition();
 
   const runRefresh = useCallback(
-    (work: () => void) => {
+    (work: () => void | Promise<void>) => {
       startTransition(work);
     },
     []
