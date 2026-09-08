@@ -83,7 +83,7 @@ export default async function HomePage() {
             </p>
 
             <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
-              Budget Tracker
+              Welcome to Budget Tracker
             </h1>
 
             <p className="mt-2 text-[#647086]">

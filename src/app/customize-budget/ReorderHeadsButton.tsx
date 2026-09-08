@@ -63,7 +63,7 @@ export default function ReorderHeadsButton({
       <button
         type="button"
         onClick={handleOpen}
-        className="shrink-0 rounded-xl border border-[#d8c7e8] bg-[#eee4f7] px-4 py-2 text-sm font-medium text-[#76558f] shadow-sm transition hover:bg-[#e4d5f1]"
+        className="inline-flex shrink-0 items-center rounded-xl border border-[#d8c7e8] bg-[#eee4f7] px-4 py-2 text-sm font-medium text-[#76558f] shadow-sm transition hover:bg-[#e4d5f1]"
       >
         Reorder heads
       </button>
