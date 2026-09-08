@@ -147,7 +147,7 @@ export default function SpendingToolbar(
               className="fixed inset-0 z-30 cursor-default"
             />
 
-            <div className="absolute right-0 top-[calc(100%+0.5rem)] z-40 flex min-w-[190px] flex-col items-stretch gap-2 rounded-2xl border border-[#f3b9cd] bg-[#ffdce9] p-2 shadow-xl [&>button]:w-full">
+            <div className="popup-panel absolute right-0 top-[calc(100%+0.5rem)] z-40 flex min-w-[190px] origin-top-right flex-col items-stretch gap-2 rounded-2xl border border-[#f3b9cd] bg-[#ffdce9] p-2 shadow-xl [&>button]:w-full">
               {addCredit}
               {secondary}
             </div>

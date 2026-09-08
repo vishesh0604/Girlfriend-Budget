@@ -170,14 +170,14 @@ export default function PushRemainingButton({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5 py-6"
+          className="popup-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5 py-6"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               handleClose();
             }
           }}
         >
-          <div className="w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-hidden rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] shadow-xl">
+          <div className="popup-panel w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-hidden rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] shadow-xl">
             <div className="help-popup-scrollbar max-h-[calc(100vh-3rem)] overflow-y-auto overscroll-contain p-6 pr-5">
               
               <div className="flex items-center gap-2">
@@ -387,8 +387,8 @@ export default function PushRemainingButton({
       )}
 
       {reverseConfirmOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-5">
-          <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl">
+        <div className="popup-overlay fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-5">
+          <div className="popup-panel w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl">
             <h3 className="text-lg font-semibold text-zinc-950">
               Reverse Push?
             </h3>
@@ -428,8 +428,8 @@ export default function PushRemainingButton({
       )}
 
       {reverseAllConfirmOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-5">
-          <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl">
+        <div className="popup-overlay fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-5">
+          <div className="popup-panel w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl">
             <h3 className="text-lg font-semibold text-zinc-950">
               Reverse All Pushes?
             </h3>

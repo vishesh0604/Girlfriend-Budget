@@ -262,18 +262,6 @@ a:hover {
    SPENDING BREAKDOWN CHART (pie popup)
 ------------------------------------------------------- */
 
-@keyframes chart-pop-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @keyframes chart-legend-in {
   0% {
     opacity: 0;
@@ -283,5 +271,47 @@ a:hover {
   100% {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* -------------------------------------------------------
+   POPUP / MODAL ENTRANCE (used by every popup)
+------------------------------------------------------- */
+
+@keyframes popup-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popup-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.popup-overlay {
+  animation: popup-overlay-in 130ms ease-out both;
+}
+
+.popup-panel {
+  animation: popup-panel-in 180ms
+    cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popup-overlay,
+  .popup-panel {
+    animation-duration: 1ms;
   }
 }

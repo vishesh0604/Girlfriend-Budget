@@ -42,7 +42,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 px-5"
+      className="popup-overlay fixed inset-0 z-[80] flex items-center justify-center bg-black/50 px-5"
       onMouseDown={(event) => {
         if (
           event.target === event.currentTarget &&
@@ -52,7 +52,7 @@ export default function ConfirmDialog({
         }
       }}
     >
-      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl">
+      <div className="popup-panel w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl">
         <h3 className="text-lg font-semibold text-zinc-950">
           {title}
         </h3>

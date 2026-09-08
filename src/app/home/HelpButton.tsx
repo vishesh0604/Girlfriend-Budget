@@ -30,14 +30,14 @@ export default function HelpButton({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5 py-6"
+          className="popup-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5 py-6"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setOpen(false);
             }
           }}
         >
-          <div className="relative w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-hidden rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] shadow-xl">
+          <div className="popup-panel relative w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-hidden rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] shadow-xl">
             <PopupCloseButton
               onClick={() => setOpen(false)}
             />

@@ -126,7 +126,7 @@ export default function AddExpenseButton({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5 py-6"
+          className="popup-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5 py-6"
           onMouseDown={(event) => {
             if (
               event.target === event.currentTarget
@@ -135,7 +135,7 @@ export default function AddExpenseButton({
             }
           }}
         >
-          <div className="w-full max-w-md max-h-[calc(100vh-3rem)] overflow-y-auto rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-6 shadow-xl">
+          <div className="popup-panel w-full max-w-md max-h-[calc(100vh-3rem)] overflow-y-auto rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-6 shadow-xl">
             <h2 className="text-lg font-semibold tracking-tight text-[#26354d]">
               Add expense
             </h2>
