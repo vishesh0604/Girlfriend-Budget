@@ -10,6 +10,8 @@ import SpendingToolbar from "./SpendingToolbar";
 import SpendingEntryRow from "./SpendingEntryRow";
 import SpendingCreditRow from "./SpendingCreditRow";
 import SpendingBreakdownChart from "./SpendingBreakdownChart";
+import CategoryBreakdown from "./CategoryBreakdown";
+import MonthlyReportButton from "./MonthlyReportButton";
 import { getSpendingSnapshot } from "./spendingSnapshot";
 import {
   ensureDefaultSpendingCategories,
@@ -443,6 +445,7 @@ export default async function DailySpendingPage({
     spentByCategory.entries()
   )
     .map(([id, amount]) => ({
+      categoryId: id,
       name:
         categoryNameById.get(id) ??
         "Uncategorised",
@@ -600,10 +603,32 @@ export default async function DailySpendingPage({
                     By category
                   </p>
                   <p className="mt-1">
-                    A breakdown of how much you spent per category
-                    this month. Tap View chart for a pie of the
-                    whole spending pool, each category and what is
-                    left, with amounts and percentages.
+                    How much you spent per category this month. Each
+                    category is a button &mdash; tap it to see every
+                    expense in that category with a running total.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    View chart
+                  </p>
+                  <p className="mt-1">
+                    A pie of the whole spending pool &mdash; every
+                    category, plus what was moved out and what is
+                    left &mdash; with amounts and percentages.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-[#26354d]">
+                    Monthly report
+                  </p>
+                  <p className="mt-1">
+                    Pick any date range and download a PDF: pool,
+                    spent and remaining totals, the category pie, a
+                    month-by-month table, and every transaction in
+                    the range.
                   </p>
                 </div>
 
@@ -706,30 +731,25 @@ export default async function DailySpendingPage({
                 By category
               </p>
 
-              <SpendingBreakdownChart
-                categories={breakdown}
-                movedOut={snapshot.movedOut}
-                remaining={remaining}
-                pool={spendingAvailable}
-              />
+              <div className="flex shrink-0 items-center gap-2">
+                <SpendingBreakdownChart
+                  categories={breakdown}
+                  movedOut={snapshot.movedOut}
+                  remaining={remaining}
+                  pool={spendingAvailable}
+                />
+
+                <MonthlyReportButton
+                  monthStart={monthStart}
+                />
+              </div>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-              {breakdown.map((item) => (
-                <div
-                  key={item.name}
-                  className="flex items-baseline gap-2 whitespace-nowrap"
-                >
-                  <span className="text-sm text-zinc-500">
-                    {item.name}
-                  </span>
-
-                  <span className="text-sm font-semibold">
-                    {formatCurrency(item.amount)}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <CategoryBreakdown
+              items={breakdown}
+              entries={entries}
+              monthStart={monthStart}
+            />
           </section>
         )}
 

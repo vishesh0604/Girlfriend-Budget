@@ -145,7 +145,7 @@ export default function MoveRemainingButton({
       <button
         type="button"
         onClick={handleOpen}
-        className="rounded-xl border border-[#c9ddea] bg-[#f8fcff] px-4 py-2 text-sm font-medium text-[#3978a5] shadow-sm transition hover:bg-[#eaf5fc]"
+        className="rounded-xl border border-[#f3b9cd] bg-[#ffdce9] px-4 py-2 text-sm font-medium text-[#c4567d] shadow-sm transition hover:bg-[#ffe8f0]"
       >
         Move remaining
       </button>

@@ -5,6 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getSpendingSnapshot } from "./spendingSnapshot";
 import { getAuthUserId } from "@/lib/supabase/authUser";
 import { isValidCategoryColor } from "./categoryColors";
+import {
+  monthsInRange,
+  type SpendingReport,
+} from "./spendingReport";
 
 const DEFAULT_CATEGORIES = [
   "Food",
@@ -977,4 +981,278 @@ export async function deleteSpendingCredit(
   revalidatePath("/daily-spending");
 
   return { success: true };
+}
+
+// Per-month snapshots are the slow part; cap how many a report will run.
+const REPORT_MONTH_SNAPSHOT_CAP = 24;
+
+function pad2(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+/*
+ * Gather everything the Monthly Report popup needs for a date range.
+ * `fromDate` empty means "from the first transaction"; `toDate` empty
+ * means "up to today". Both inclusive, "YYYY-MM-DD".
+ */
+export async function generateSpendingReport(
+  fromDate: string,
+  toDate: string
+): Promise<
+  | { success: true; report: SpendingReport }
+  | { success: false; error: string }
+> {
+  const supabase = await createClient();
+
+  const userId = await getAuthUserId(supabase);
+
+  if (!userId) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${pad2(
+    today.getMonth() + 1
+  )}-${pad2(today.getDate())}`;
+
+  const from = fromDate || "2000-01-01";
+  const to = toDate || todayStr;
+
+  if (
+    !isValidDate(from) ||
+    !isValidDate(to) ||
+    from > to
+  ) {
+    return {
+      success: false,
+      error: "Pick a valid date range.",
+    };
+  }
+
+  const fromMonth = `${from.slice(0, 7)}-01`;
+  const toMonth = `${to.slice(0, 7)}-01`;
+
+  const [
+    entriesResult,
+    creditsResult,
+    movesResult,
+    headsResult,
+  ] = await Promise.all([
+    supabase
+      .from("spending_entries")
+      .select(
+        "entry_date, amount, note, spending_categories (name, color)"
+      )
+      .eq("user_id", userId)
+      .gte("entry_date", from)
+      .lte("entry_date", to)
+      .order("entry_date", { ascending: true }),
+    supabase
+      .from("spending_credits")
+      .select("entry_date, amount, note")
+      .eq("user_id", userId)
+      .gte("entry_date", from)
+      .lte("entry_date", to)
+      .order("entry_date", { ascending: true }),
+    supabase
+      .from("spending_moves")
+      .select(
+        "month_start, amount, destination_kind, destination_monthly_head_id"
+      )
+      .eq("user_id", userId)
+      .gte("month_start", fromMonth)
+      .lte("month_start", toMonth)
+      .order("month_start", { ascending: true }),
+    supabase
+      .from("monthly_budget_heads")
+      .select("id, budget_heads (name)")
+      .eq("user_id", userId),
+  ]);
+
+  for (const result of [
+    entriesResult,
+    creditsResult,
+    movesResult,
+    headsResult,
+  ]) {
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error.message,
+      };
+    }
+  }
+
+  const headNameById = new Map<string, string>();
+
+  for (const row of headsResult.data ?? []) {
+    const head = Array.isArray(row.budget_heads)
+      ? row.budget_heads[0]
+      : row.budget_heads;
+
+    if (head?.name) {
+      headNameById.set(
+        row.id as string,
+        head.name as string
+      );
+    }
+  }
+
+  const entries = (
+    entriesResult.data ?? []
+  ).map((row) => {
+    const category = Array.isArray(
+      row.spending_categories
+    )
+      ? row.spending_categories[0]
+      : row.spending_categories;
+
+    return {
+      date: row.entry_date as string,
+      category:
+        (category?.name as string) ??
+        "Uncategorised",
+      color:
+        (category?.color as string | null) ??
+        null,
+      amount: Number(row.amount),
+      note: (row.note as string) ?? "",
+    };
+  });
+
+  const credits = (
+    creditsResult.data ?? []
+  ).map((row) => ({
+    date: row.entry_date as string,
+    amount: Number(row.amount),
+    note: (row.note as string) ?? "",
+  }));
+
+  const moves = (movesResult.data ?? []).map(
+    (row) => ({
+      month: row.month_start as string,
+      amount: Number(row.amount),
+      label:
+        row.destination_kind === "next_month"
+          ? "Next month's pool"
+          : headNameById.get(
+              row.destination_monthly_head_id as string
+            ) ?? "a budget head",
+    })
+  );
+
+  // "All time" - anchor the range to the first real transaction.
+  const earliest =
+    entries[0]?.date ??
+    credits[0]?.date ??
+    moves[0]?.month ??
+    to;
+
+  const actualFrom = fromDate ? from : earliest;
+
+  const monthList = monthsInRange(
+    `${actualFrom.slice(0, 7)}-01`,
+    toMonth
+  );
+
+  let months: SpendingReport["months"];
+
+  if (
+    monthList.length <=
+    REPORT_MONTH_SNAPSHOT_CAP
+  ) {
+    const snapshots = await Promise.all(
+      monthList.map((month) =>
+        getSpendingSnapshot(
+          supabase,
+          userId,
+          month
+        )
+      )
+    );
+
+    months = monthList.map((month, index) => ({
+      month,
+      pool: snapshots[index].available,
+      spent: snapshots[index].totalSpent,
+      credited: snapshots[index].credits,
+      movedOut: snapshots[index].movedOut,
+      remaining: snapshots[index].remaining,
+    }));
+  } else {
+    const tally = new Map<
+      string,
+      {
+        spent: number;
+        credited: number;
+        movedOut: number;
+      }
+    >();
+
+    const bucket = (month: string) =>
+      tally.get(month) ?? {
+        spent: 0,
+        credited: 0,
+        movedOut: 0,
+      };
+
+    for (const entry of entries) {
+      const month = `${entry.date.slice(
+        0,
+        7
+      )}-01`;
+      const current = bucket(month);
+      current.spent += entry.amount;
+      tally.set(month, current);
+    }
+
+    for (const credit of credits) {
+      const month = `${credit.date.slice(
+        0,
+        7
+      )}-01`;
+      const current = bucket(month);
+      current.credited += credit.amount;
+      tally.set(month, current);
+    }
+
+    for (const move of moves) {
+      const current = bucket(move.month);
+      current.movedOut += move.amount;
+      tally.set(move.month, current);
+    }
+
+    months = monthList.map((month) => {
+      const current = tally.get(month) ?? {
+        spent: 0,
+        credited: 0,
+        movedOut: 0,
+      };
+
+      return {
+        month,
+        pool: null,
+        spent: current.spent,
+        credited: current.credited,
+        movedOut: current.movedOut,
+        remaining: null,
+      };
+    });
+  }
+
+  return {
+    success: true,
+    report: {
+      from: actualFrom,
+      to,
+      generatedAt: new Date().toISOString(),
+      entries,
+      credits,
+      moves,
+      months,
+    },
+  };
 }

@@ -219,7 +219,7 @@ export default function AddExpenseButton({
                   onChange={(event) =>
                     setNote(event.target.value)
                   }
-                  placeholder="e.g. lunch with Tanishka"
+                  placeholder="e.g. lunch @ Chilli's"
                   className="mt-1 w-full rounded-lg border border-[#c9ddea] bg-[#f8fcff] px-3 py-2 text-sm outline-none focus:border-[#4f8fbd]"
                 />
               </div>

@@ -141,7 +141,7 @@ export default function SpendingBreakdownChart({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="shrink-0 rounded-lg border border-[#ee8fb2] bg-[#ffbdd4] px-2.5 py-1 text-xs font-semibold text-[#a5305c] transition hover:bg-[#ffa9c7]"
+        className="shrink-0 rounded-lg border border-[#f3b9cd] bg-[#ffdce9] px-2.5 py-1 text-xs font-medium text-[#c4567d] transition hover:bg-[#ffe8f0]"
       >
         View chart
       </button>
