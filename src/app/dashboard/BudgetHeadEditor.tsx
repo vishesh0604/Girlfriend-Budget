@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -10,6 +10,9 @@ import {
   updateMonthlyHeadNote,
   createTransfer,
   undoTransfer,
+  getBudgetHeadPaymentHistory,
+  deleteHeadPayment,
+  type PaymentHistoryEntry,
 } from "./actions";
 import { calculateMaximumPaidAmount } from "@/lib/supabase/budget/calculations";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -31,7 +34,10 @@ type RecentTransfer = {
 type BudgetHeadEditorProps = {
   monthlyHeadId: string;
   monthlyBudgetId: string;
+  budgetHeadId: string;
   name: string;
+  dueDay: number | null;
+  monthStart: string;
   allocation: number;
   paidAmount: number;
   remaining: number;
@@ -41,10 +47,107 @@ type BudgetHeadEditorProps = {
   recentTransfer?: RecentTransfer;
 };
 
+const MONTH_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+function currentMonthStart() {
+  const now = new Date();
+
+  return `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}-01`;
+}
+
+/* A short "(due in 3 days)" style tag, only within ~a week of the date. */
+function dueLabel(
+  monthStart: string,
+  dueDay: number | null,
+  settled: boolean
+) {
+  if (
+    dueDay === null ||
+    settled ||
+    monthStart !== currentMonthStart()
+  ) {
+    return null;
+  }
+
+  const now = new Date();
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+
+  const daysInMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0
+  ).getDate();
+
+  const due = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    Math.min(dueDay, daysInMonth)
+  );
+
+  const diffDays = Math.round(
+    (due.getTime() - today.getTime()) /
+      86400000
+  );
+
+  if (diffDays < 0) {
+    const by = -diffDays;
+    return `overdue by ${by} ${
+      by === 1 ? "day" : "days"
+    }`;
+  }
+  if (diffDays === 0) {
+    return "due today";
+  }
+  if (diffDays === 1) {
+    return "due tomorrow";
+  }
+
+  return `due in ${diffDays} days`;
+}
+
+function shortDate(iso: string) {
+  const date = new Date(iso);
+
+  return `${date.getDate()} ${
+    MONTH_LABELS[date.getMonth()]
+  } ${date.getFullYear()}`;
+}
+
+function monthLabel(monthStart: string) {
+  const year = Number(monthStart.slice(0, 4));
+  const month = Number(
+    monthStart.slice(5, 7)
+  );
+
+  return `${MONTH_LABELS[month - 1]} ${year}`;
+}
+
 export default function BudgetHeadEditor({
   monthlyHeadId,
   monthlyBudgetId,
+  budgetHeadId,
   name,
+  dueDay,
+  monthStart,
   allocation,
   paidAmount,
   remaining,
@@ -55,6 +158,73 @@ export default function BudgetHeadEditor({
 }: BudgetHeadEditorProps) {
   const router = useRouter();
   const { runRefresh } = useRefresh();
+
+  const settled = remaining <= 0;
+  const due = dueLabel(
+    monthStart,
+    dueDay,
+    settled
+  );
+
+  const [historyOpen, setHistoryOpen] =
+    useState(false);
+  const [
+    historyLoading,
+    setHistoryLoading,
+  ] = useState(false);
+  const [history, setHistory] = useState<
+    PaymentHistoryEntry[] | null
+  >(null);
+  const [
+    historyDeleteTarget,
+    setHistoryDeleteTarget,
+  ] = useState<PaymentHistoryEntry | null>(null);
+  const [historyDeleting, setHistoryDeleting] =
+    useState(false);
+  const [historyHelpOpen, setHistoryHelpOpen] =
+    useState(false);
+
+  async function openHistory() {
+    setHistoryOpen(true);
+    setHistoryHelpOpen(false);
+    setHistoryLoading(true);
+
+    const result =
+      await getBudgetHeadPaymentHistory(
+        budgetHeadId
+      );
+
+    setHistoryLoading(false);
+
+    if (result.success) {
+      setHistory(result.history);
+    }
+  }
+
+  async function handleDeleteHistoryEntry() {
+    const target = historyDeleteTarget;
+
+    if (!target?.id) {
+      return;
+    }
+
+    setHistoryDeleting(true);
+
+    const result = await deleteHeadPayment(
+      target.id
+    );
+
+    setHistoryDeleting(false);
+    setHistoryDeleteTarget(null);
+
+    if (result.success) {
+      setHistory((current) =>
+        (current ?? []).filter(
+          (entry) => entry.id !== target.id
+        )
+      );
+    }
+  }
 
   const maximumPaidAmount =
     calculateMaximumPaidAmount(
@@ -90,7 +260,9 @@ export default function BudgetHeadEditor({
     useState(false);
 
   const [clearedTransferId, setClearedTransferId] =
-    useState<string | null>(null);
+    useState<string | null>(() =>
+      readClearedPreference()
+    );
 
   const [allocationValue, setAllocationValue] =
     useState(String(allocation));
@@ -126,37 +298,46 @@ export default function BudgetHeadEditor({
     useState("");
 
   /*
-   * Restore the user's "clear recent transfer"
-   * preference for this specific transfer.
+   * Restore the user's "clear recent transfer" preference for this
+   * transfer. Derived during render (adjusting state on a prop change)
+   * rather than in an effect - see react.dev "You Might Not Need an
+   * Effect".
    */
-  useEffect(() => {
-    if (!recentTransfer) {
-      setClearedTransferId(null);
-      return;
-    }
-
-    const storageKey =
-      `budget-cleared-transfer-${monthlyHeadId}`;
-
-    const storedTransferId =
-      window.localStorage.getItem(
-        storageKey
-      );
-
+  function readClearedPreference() {
     if (
-      storedTransferId ===
-      recentTransfer.transferId
+      typeof window === "undefined" ||
+      !recentTransfer
     ) {
-      setClearedTransferId(
-        storedTransferId
-      );
-    } else {
-      setClearedTransferId(null);
+      return null;
     }
-  }, [
-    monthlyHeadId,
-    recentTransfer?.transferId,
-  ]);
+
+    const stored =
+      window.localStorage.getItem(
+        `budget-cleared-transfer-${monthlyHeadId}`
+      );
+
+    return stored ===
+      recentTransfer.transferId
+      ? stored
+      : null;
+  }
+
+  const [trackedTransferId, setTrackedTransferId] =
+    useState(
+      recentTransfer?.transferId ?? null
+    );
+
+  if (
+    trackedTransferId !==
+    (recentTransfer?.transferId ?? null)
+  ) {
+    setTrackedTransferId(
+      recentTransfer?.transferId ?? null
+    );
+    setClearedTransferId(
+      readClearedPreference()
+    );
+  }
 
   const recentTransferHidden =
     Boolean(
@@ -360,6 +541,20 @@ export default function BudgetHeadEditor({
         <div>
           <h3 className="font-semibold">
             {name}
+            {due && (
+              <span
+                className={`ml-1.5 text-xs font-medium ${
+                  due.startsWith("overdue")
+                    ? "text-[#c0392b]"
+                    : due === "due today" ||
+                      due === "due tomorrow"
+                    ? "text-[#c0392b]"
+                    : "text-[#c4567d]"
+                }`}
+              >
+                ({due})
+              </span>
+            )}
           </h3>
         </div>
       </div>
@@ -561,23 +756,35 @@ export default function BudgetHeadEditor({
           </p>
         </div>
 
-        {/* Pay in full */}
+        {/* History + Pay in full. On narrow cards the pair is wider than
+            this half-width cell, so it overflows left into the empty space
+            beside Remaining rather than wrapping and growing the card. */}
         <div className="flex h-full flex-col items-end justify-center pt-2">
           {!editingPaid && (
             <>
-              <button
-                type="button"
-                onClick={handlePayInFull}
-                disabled={
-                  payingInFull ||
-                  remaining <= 0
-                }
-                className="rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
-              >
-                {payingInFull
-                  ? "Paying..."
-                  : "Pay in full"}
-              </button>
+              <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
+                <button
+                  type="button"
+                  onClick={openHistory}
+                  className="rounded-lg border border-[#d8c7e8] bg-[#eee4f7] px-3.5 py-2 text-sm font-medium text-[#76558f] transition hover:bg-[#e4d5f1]"
+                >
+                  History
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePayInFull}
+                  disabled={
+                    payingInFull ||
+                    remaining <= 0
+                  }
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+                >
+                  {payingInFull
+                    ? "Paying..."
+                    : "Pay in full"}
+                </button>
+              </div>
 
               {payInFullError && (
                 <p className="mt-2 text-right text-xs text-red-600">
@@ -588,6 +795,230 @@ export default function BudgetHeadEditor({
           )}
         </div>
       </div>
+
+      {historyOpen && (
+        <div
+          className="popup-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5 py-6"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+            ) {
+              setHistoryOpen(false);
+            }
+          }}
+        >
+          <div className="popup-panel flex w-full max-w-sm flex-col max-h-[calc(100vh-3rem)] rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] shadow-xl">
+            {/* Fixed header */}
+            <div className="flex shrink-0 items-center gap-2 border-b border-[#f3b9cd] px-6 pb-4 pt-6">
+              <h2 className="text-lg font-semibold tracking-tight text-[#26354d]">
+                Payment history
+              </h2>
+
+              <button
+                type="button"
+                aria-label="About payment history"
+                onClick={() =>
+                  setHistoryHelpOpen(
+                    (open) => !open
+                  )
+                }
+                className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold transition ${
+                  historyHelpOpen
+                    ? "border-[#e8c96f] bg-[#ffe9a8] text-[#8a7440]"
+                    : "border-[#e8c96f] bg-[#fff4c7] text-[#8a7440] hover:bg-[#ffefb0]"
+                }`}
+              >
+                ?
+              </button>
+            </div>
+
+            {/* Scrollable body */}
+            <div className="help-popup-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
+              {historyHelpOpen ? (
+                <div className="space-y-3 text-sm leading-6 text-[#647086]">
+                  <p>
+                    Everything that has moved money
+                    through <strong>{name}</strong>,
+                    newest first (last 10).
+                  </p>
+
+                  <p>
+                    <strong className="text-[#a94444]">
+                      Red &minus;
+                    </strong>{" "}
+                    money left this head.{" "}
+                    <strong className="text-emerald-700">
+                      Green +
+                    </strong>{" "}
+                    money came in.
+                  </p>
+
+                  <div>
+                    <p className="font-semibold text-[#26354d]">
+                      The lines
+                    </p>
+                    <ul className="mt-1 list-disc space-y-1 pl-5">
+                      <li>
+                        <strong>Paid / Used</strong>{" "}
+                        &mdash; you marked a bill
+                        paid or logged a spend.
+                      </li>
+                      <li>
+                        <strong>
+                          Paid / Used reduced
+                        </strong>{" "}
+                        &mdash; you corrected the
+                        amount down.
+                      </li>
+                      <li>
+                        <strong>
+                          Received from / Sent to a
+                          head
+                        </strong>{" "}
+                        &mdash; a fund move between
+                        budget heads.
+                      </li>
+                      <li>
+                        <strong>
+                          Received from Spending Pool
+                        </strong>{" "}
+                        &mdash; leftover daily-spending
+                        money you moved in.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <p>
+                    <strong>
+                      &ldquo;for [month]&rdquo;
+                    </strong>{" "}
+                    &mdash; which month the entry
+                    belongs to.
+                  </p>
+
+                  <p>
+                    <strong>The &times;</strong>{" "}
+                    removes a{" "}
+                    <em>Paid / Used</em> line from
+                    this list only &mdash; your Paid /
+                    Used total and Remaining
+                    don&apos;t change. Fund moves and
+                    pool top-ups have no &times;: undo
+                    them from Recent Moves or Move
+                    remaining and they leave here on
+                    their own.
+                  </p>
+                </div>
+              ) : historyLoading ? (
+                <p className="text-sm text-[#647086]">
+                  Loading...
+                </p>
+              ) : history &&
+                history.length > 0 ? (
+                <div className="space-y-1.5">
+                  {history.map((entry, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-[#ffe8f0] px-3 py-2 text-sm"
+                    >
+                      <span className="min-w-0">
+                        <span className="text-[#26354d]">
+                          {entry.label}
+                        </span>
+                        <span className="ml-1.5 text-xs text-[#8a94a6]">
+                          {shortDate(
+                            entry.createdAt
+                          )}
+                          {entry.forMonth &&
+                            ` · for ${monthLabel(
+                              entry.forMonth
+                            )}`}
+                        </span>
+                      </span>
+
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span
+                          className={`font-semibold ${
+                            entry.amount < 0
+                              ? "text-[#a94444]"
+                              : "text-emerald-700"
+                          }`}
+                        >
+                          {entry.amount < 0
+                            ? "−"
+                            : "+"}
+                          ₹
+                          {Math.abs(
+                            entry.amount
+                          ).toLocaleString(
+                            "en-IN"
+                          )}
+                        </span>
+
+                        {entry.id && (
+                          <button
+                            type="button"
+                            aria-label="Remove from history"
+                            onClick={() =>
+                              setHistoryDeleteTarget(
+                                entry
+                              )
+                            }
+                            className="flex h-5 w-5 items-center justify-center rounded-full text-[#a08699] transition hover:bg-[#ffdce9] hover:text-[#7a2f2f]"
+                          >
+                            <svg
+                              width="11"
+                              height="11"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.6"
+                              strokeLinecap="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M6 6l12 12M18 6L6 18" />
+                            </svg>
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[#647086]">
+                  No payments recorded for this head
+                  yet.
+                </p>
+              )}
+            </div>
+
+            {/* Fixed footer */}
+            <div className="flex shrink-0 justify-end gap-2 border-t border-[#f3b9cd] px-6 pb-6 pt-4">
+              {historyHelpOpen && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setHistoryHelpOpen(false)
+                  }
+                  className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0]"
+                >
+                  &larr; Back
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setHistoryOpen(false)
+                }
+                className="rounded-lg border border-[#f3b9cd] px-4 py-2 text-sm font-medium text-[#647086] hover:bg-[#ffe8f0]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Recent Move */}
       <div className="mt-3 border-t border-zinc-100 pt-3">
@@ -902,6 +1333,34 @@ export default function BudgetHeadEditor({
         tone="danger"
         onConfirm={handleClearRecentTransfer}
         onCancel={() => setClearConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={historyDeleteTarget !== null}
+        title="Remove from history?"
+        message={
+          historyDeleteTarget
+            ? `${
+                historyDeleteTarget.label
+              } · ${
+                historyDeleteTarget.amount < 0
+                  ? "−"
+                  : "+"
+              }₹${Math.abs(
+                historyDeleteTarget.amount
+              ).toLocaleString(
+                "en-IN"
+              )}\n\nThis only removes the line from this list. Your Paid / Used amount and balance don't change.`
+            : ""
+        }
+        confirmLabel="Remove"
+        busyLabel="Removing..."
+        tone="danger"
+        busy={historyDeleting}
+        onConfirm={handleDeleteHistoryEntry}
+        onCancel={() =>
+          setHistoryDeleteTarget(null)
+        }
       />
     </div>
   );

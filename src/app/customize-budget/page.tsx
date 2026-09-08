@@ -2,17 +2,17 @@ import HomeButton from "./HomeButton";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUserId } from "@/lib/supabase/authUser";
 import BudgetHeadForm from "./BudgetHeadForm";
+import ReorderHeadsButton from "./ReorderHeadsButton";
 import HelpButton from "../home/HelpButton";
 
 export default async function CustomizeBudgetPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     redirect("/");
   }
 
@@ -22,9 +22,10 @@ export default async function CustomizeBudgetPage() {
   } = await supabase
     .from("budget_heads")
     .select(
-      "id, name, head_type, default_monthly_allocation, is_active"
+      "id, name, head_type, default_monthly_allocation, is_active, due_day, sort_order"
     )
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
+    .order("sort_order", { ascending: true })
     .order("created_at", {
       ascending: true,
     });
@@ -38,7 +39,16 @@ export default async function CustomizeBudgetPage() {
       <div className="mx-auto w-full max-w-4xl">
 
         <div className="mb-8">
-          <HomeButton />
+          <div className="flex items-center justify-between gap-3">
+            <HomeButton />
+
+            <ReorderHeadsButton
+              heads={budgetHeads.map((head) => ({
+                id: head.id,
+                name: head.name,
+              }))}
+            />
+          </div>
 
           <div className="mt-4 flex items-center gap-2">
             <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
@@ -82,6 +92,33 @@ export default async function CustomizeBudgetPage() {
                   You can change a budget head&apos;s name,
                   type, and default monthly allocation
                   whenever needed.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-[#26354d]">
+                  Bill due day
+                </p>
+
+                <p className="mt-1">
+                  Optionally set the day of the month a
+                  head&apos;s bill is due. As that day
+                  approaches, the Fixed Expenses card shows
+                  a reminder next to the head&apos;s name
+                  (e.g. &ldquo;due in 3 days&rdquo;).
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-[#26354d]">
+                  Reorder heads
+                </p>
+
+                <p className="mt-1">
+                  The button at the top opens a list you can
+                  drag to reorder. The order you set is the
+                  order the heads appear on the Fixed
+                  Expenses page.
                 </p>
               </div>
 
@@ -166,6 +203,24 @@ export default async function CustomizeBudgetPage() {
                         head.default_monthly_allocation
                       ).toLocaleString("en-IN")}
                     </p>
+
+                    {head.due_day && (
+                      <p className="mt-2 text-xs font-medium text-[#c4567d]">
+                        Bill due on the{" "}
+                        {head.due_day}
+                        {head.due_day === 1 ||
+                        head.due_day === 21 ||
+                        head.due_day === 31
+                          ? "st"
+                          : head.due_day === 2 ||
+                            head.due_day === 22
+                          ? "nd"
+                          : head.due_day === 3 ||
+                            head.due_day === 23
+                          ? "rd"
+                          : "th"}
+                      </p>
+                    )}
                   </div>
 
                   <BudgetHeadForm
@@ -178,6 +233,9 @@ export default async function CustomizeBudgetPage() {
                         String(
                           head.default_monthly_allocation
                         ),
+                      dueDay: head.due_day
+                        ? String(head.due_day)
+                        : "",
                     }}
                     isActive={head.is_active}
                   />

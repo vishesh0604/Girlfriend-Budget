@@ -1,19 +1,62 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUserId } from "@/lib/supabase/authUser";
+import { getSpendingSnapshot } from "../daily-spending/spendingSnapshot";
 import LogoutButton from "./LogoutButton";
 import HelpButton from "./HelpButton";
 import DeveloperLogsButton from "./DeveloperLogsButton";
 
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     redirect("/");
+  }
+
+  // End-of-month nudge: from the 28th (26th in February), show what's
+  // still unspent in this month's pool. Recomputed on every visit.
+  const now = new Date();
+  const nudgeThreshold =
+    now.getMonth() === 1 ? 26 : 28;
+  let poolNudge: {
+    remaining: number;
+    monthName: string;
+  } | null = null;
+
+  if (now.getDate() >= nudgeThreshold) {
+    const monthStart = `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+    const snapshot = await getSpendingSnapshot(
+      supabase,
+      userId,
+      monthStart
+    );
+
+    poolNudge = {
+      remaining: snapshot.remaining,
+      monthName:
+        MONTH_NAMES[now.getMonth()],
+    };
   }
 
   return (
@@ -83,8 +126,23 @@ export default async function HomePage() {
 
                   <p className="mt-1">
                     Set up and manage your budget heads. You can add,
-                    edit, rename, allocate, and manage the budget
-                    categories used throughout your monthly budget.
+                    edit, rename, allocate, reorder, and set a bill due
+                    day for each. You can also deactivate the ones you
+                    no longer use.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-[#26354d]">
+                    Month-end reminder
+                  </h3>
+
+                  <p className="mt-1">
+                    From the 28th (26th in February), a small note
+                    appears below Log out showing what&apos;s still
+                    unspent in this month&apos;s Spending Pool, with a
+                    link to move it before the month ends. It updates
+                    every time you open this page.
                   </p>
                 </div>
               </HelpButton>
@@ -217,6 +275,38 @@ export default async function HomePage() {
 
           <div className="mt-8 text-center">
             <LogoutButton />
+
+            {poolNudge && (
+              <p className="mx-auto mt-4 max-w-md text-xs leading-5 text-[#647086]">
+                <span className="mr-1 font-semibold text-[#4f8fbd]">
+                  &#9432;
+                </span>
+                {poolNudge.remaining > 0 ? (
+                  <>
+                    ₹
+                    {Math.round(
+                      poolNudge.remaining
+                    ).toLocaleString("en-IN")}{" "}
+                    is still unspent in{" "}
+                    {poolNudge.monthName}
+                    &apos;s spending pool.{" "}
+                    <Link
+                      href="/daily-spending?move=1"
+                      className="underline underline-offset-2 hover:text-[#26354d]"
+                    >
+                      Move it before the month
+                      ends
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  <>
+                    {poolNudge.monthName}&apos;s
+                    spending pool is fully used.
+                  </>
+                )}
+              </p>
+            )}
           </div>
         </div>
       </div>

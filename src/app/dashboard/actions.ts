@@ -8,25 +8,7 @@ import {
   type TransferRecord,
 } from "@/lib/supabase/budget/calculations";
 import { loadSpendingMoveTransferRecords } from "@/lib/supabase/spending/moves";
-
-function getPreviousMonthStart(
-  monthStart: string
-) {
-  const [year, month] =
-    monthStart.split("-").map(Number);
-
-  const date = new Date(
-    Date.UTC(year, month - 1, 1)
-  );
-
-  date.setUTCMonth(
-    date.getUTCMonth() - 1
-  );
-
-  return `${date.getUTCFullYear()}-${String(
-    date.getUTCMonth() + 1
-  ).padStart(2, "0")}-01`;
-}
+import { getAuthUserId } from "@/lib/supabase/authUser";
 
 export async function initializeMonthlyBudget(
   monthStart: string
@@ -524,7 +506,7 @@ export async function updateMonthlyHeadPaidAmount(
   } = await supabase
     .from("monthly_budget_heads")
     .select(
-      "id, allocated_amount, carry_forward, paid_amount, monthly_budget_id"
+      "id, budget_head_id, allocated_amount, carry_forward, paid_amount, monthly_budget_id"
     )
     .eq("id", monthlyHeadId)
     .eq("user_id", user.id)
@@ -677,6 +659,20 @@ export async function updateMonthlyHeadPaidAmount(
       success: false,
       error: error.message,
     };
+  }
+
+  // Record the change as a payment-history entry (the delta - a real
+  // payment, or a negative correction).
+  const delta = paidAmount - currentPaidAmount;
+
+  if (Math.abs(delta) >= 0.01) {
+    await supabase.from("head_payments").insert({
+      user_id: user.id,
+      monthly_budget_head_id: monthlyHeadId,
+      budget_head_id:
+        monthlyHead.budget_head_id,
+      amount: delta,
+    });
   }
 
   revalidatePath("/dashboard");
@@ -1854,10 +1850,36 @@ export async function syncMonthlyCarryForward(
   };
 }
 
+function parseDueDay(value: string | undefined) {
+  if (
+    value === undefined ||
+    value.trim() === ""
+  ) {
+    return { ok: true, dueDay: null };
+  }
+
+  const day = Number(value);
+
+  if (
+    !Number.isInteger(day) ||
+    day < 1 ||
+    day > 31
+  ) {
+    return {
+      ok: false as const,
+      error:
+        "Due day must be a whole number between 1 and 31.",
+    };
+  }
+
+  return { ok: true as const, dueDay: day };
+}
+
 export async function createBudgetHead(
   name: string,
   headType: string,
-  allocationValue: string
+  allocationValue: string,
+  dueDayValue?: string
 ) {
   const supabase = await createClient();
 
@@ -1904,6 +1926,29 @@ export async function createBudgetHead(
     };
   }
 
+  const dueDayResult =
+    parseDueDay(dueDayValue);
+
+  if (!dueDayResult.ok) {
+    return {
+      success: false,
+      error: dueDayResult.error,
+    };
+  }
+
+  const { data: lastHead } = await supabase
+    .from("budget_heads")
+    .select("sort_order")
+    .eq("user_id", user.id)
+    .order("sort_order", {
+      ascending: false,
+    })
+    .limit(1)
+    .maybeSingle();
+
+  const nextSortOrder =
+    (Number(lastHead?.sort_order) || 0) + 1;
+
   const {
     data: budgetHead,
     error: budgetHeadError,
@@ -1914,6 +1959,8 @@ export async function createBudgetHead(
       name: trimmedName,
       head_type: headType.trim(),
       default_monthly_allocation: allocation,
+      due_day: dueDayResult.dueDay,
+      sort_order: nextSortOrder,
       is_active: true,
     })
     .select("id")
@@ -2001,7 +2048,8 @@ export async function updateBudgetHead(
   budgetHeadId: string,
   name: string,
   headType: string,
-  allocationValue: string
+  allocationValue: string,
+  dueDayValue?: string
 ) {
   const supabase = await createClient();
 
@@ -2055,6 +2103,16 @@ export async function updateBudgetHead(
     };
   }
 
+  const dueDayResult =
+    parseDueDay(dueDayValue);
+
+  if (!dueDayResult.ok) {
+    return {
+      success: false,
+      error: dueDayResult.error,
+    };
+  }
+
   const {
     data,
     error,
@@ -2064,6 +2122,7 @@ export async function updateBudgetHead(
       name: trimmedName,
       head_type: headType.trim(),
       default_monthly_allocation: allocation,
+      due_day: dueDayResult.dueDay,
       updated_at: new Date().toISOString(),
     })
     .eq("id", budgetHeadId)
@@ -2570,4 +2629,331 @@ export async function deleteBudgetHead(
   return {
     success: true,
   };
+}
+
+/*
+ * Reorder budget heads. `orderedIds` is the full list of the user's
+ * budget-head ids in the new top-to-bottom order; each row's sort_order
+ * is set to its position.
+ */
+export async function reorderBudgetHeads(
+  orderedIds: string[]
+) {
+  const supabase = await createClient();
+
+  const userId = await getAuthUserId(supabase);
+
+  if (!userId) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  if (
+    !Array.isArray(orderedIds) ||
+    orderedIds.length === 0
+  ) {
+    return { success: true };
+  }
+
+  for (let index = 0; index < orderedIds.length; index += 1) {
+    const { error } = await supabase
+      .from("budget_heads")
+      .update({
+        sort_order: index + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orderedIds[index])
+      .eq("user_id", userId);
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  revalidatePath("/customize-budget");
+  revalidatePath("/dashboard");
+  revalidatePath("/home");
+
+  return { success: true };
+}
+
+export type PaymentHistoryEntry = {
+  // head_payments row id for Paid / Used entries (removable); null for
+  // fund moves and pool top-ups (undo those from their own controls).
+  id: string | null;
+  createdAt: string;
+  // Signed as a money movement for this head:
+  //   negative = money left the head (a payment made / sent out)
+  //   positive = money came into the head (received / reversed)
+  amount: number;
+  forMonth: string;
+  label: string;
+};
+
+/*
+ * The money log for one budget head, newest first. Merges: changes to
+ * Paid / Used, head-to-head fund moves (both directions), and money moved
+ * in from the Daily Spending pool. Reversed moves disappear on their own
+ * because this is computed from the live tables.
+ */
+export async function getBudgetHeadPaymentHistory(
+  budgetHeadId: string
+): Promise<
+  | { success: true; history: PaymentHistoryEntry[] }
+  | { success: false; error: string }
+> {
+  const supabase = await createClient();
+
+  const userId = await getAuthUserId(supabase);
+
+  if (!userId) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  // Every monthly row for the user - to resolve month + head names.
+  const { data: monthlyHeadRows, error: monthlyHeadRowsError } =
+    await supabase
+      .from("monthly_budget_heads")
+      .select(
+        "id, budget_head_id, monthly_budgets!inner ( month_start ), budget_heads!inner ( name )"
+      )
+      .eq("user_id", userId);
+
+  if (monthlyHeadRowsError) {
+    return {
+      success: false,
+      error: monthlyHeadRowsError.message,
+    };
+  }
+
+  const monthByMonthlyHead = new Map<
+    string,
+    string
+  >();
+  const nameByMonthlyHead = new Map<
+    string,
+    string
+  >();
+  const myMonthlyHeadIds: string[] = [];
+
+  for (const row of monthlyHeadRows ?? []) {
+    const budget = Array.isArray(
+      row.monthly_budgets
+    )
+      ? row.monthly_budgets[0]
+      : row.monthly_budgets;
+    const head = Array.isArray(
+      row.budget_heads
+    )
+      ? row.budget_heads[0]
+      : row.budget_heads;
+
+    monthByMonthlyHead.set(
+      row.id as string,
+      (budget?.month_start as string) ?? ""
+    );
+    nameByMonthlyHead.set(
+      row.id as string,
+      (head?.name as string) ?? "a head"
+    );
+
+    if (
+      row.budget_head_id === budgetHeadId
+    ) {
+      myMonthlyHeadIds.push(row.id as string);
+    }
+  }
+
+  const idList = `(${myMonthlyHeadIds.join(
+    ","
+  )})`;
+
+  const [
+    paymentsResult,
+    transfersResult,
+    movesResult,
+  ] = await Promise.all([
+    supabase
+      .from("head_payments")
+      .select("id, amount, created_at, monthly_budget_head_id")
+      .eq("user_id", userId)
+      .eq("budget_head_id", budgetHeadId),
+    myMonthlyHeadIds.length > 0
+      ? supabase
+          .from("transfers")
+          .select(
+            "amount, created_at, source_monthly_head_id, destination_monthly_head_id"
+          )
+          .eq("user_id", userId)
+          .or(
+            `source_monthly_head_id.in.${idList},destination_monthly_head_id.in.${idList}`
+          )
+      : Promise.resolve({
+          data: [] as unknown[],
+          error: null,
+        }),
+    myMonthlyHeadIds.length > 0
+      ? supabase
+          .from("spending_moves")
+          .select(
+            "amount, created_at, destination_monthly_head_id"
+          )
+          .eq("user_id", userId)
+          .eq("destination_kind", "budget_head")
+          .in(
+            "destination_monthly_head_id",
+            myMonthlyHeadIds
+          )
+      : Promise.resolve({
+          data: [] as unknown[],
+          error: null,
+        }),
+  ]);
+
+  for (const result of [
+    paymentsResult,
+    transfersResult,
+    movesResult,
+  ]) {
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error.message,
+      };
+    }
+  }
+
+  const history: PaymentHistoryEntry[] = [];
+
+  for (const row of (paymentsResult.data ??
+    []) as {
+    id: string;
+    amount: number;
+    created_at: string;
+    monthly_budget_head_id: string;
+  }[]) {
+    const delta = Number(row.amount);
+
+    history.push({
+      id: row.id,
+      createdAt: row.created_at ?? "",
+      // Paying more = money out of the head.
+      amount: -delta,
+      forMonth:
+        monthByMonthlyHead.get(
+          row.monthly_budget_head_id
+        ) ?? "",
+      label:
+        delta >= 0
+          ? "Paid / Used"
+          : "Paid / Used reduced",
+    });
+  }
+
+  for (const row of (transfersResult.data ??
+    []) as {
+    amount: number;
+    created_at: string;
+    source_monthly_head_id: string;
+    destination_monthly_head_id: string;
+  }[]) {
+    const amount = Number(row.amount);
+    const isIncoming = myMonthlyHeadIds.includes(
+      row.destination_monthly_head_id
+    );
+
+    history.push({
+      id: null,
+      createdAt: row.created_at ?? "",
+      amount: isIncoming ? amount : -amount,
+      forMonth:
+        monthByMonthlyHead.get(
+          isIncoming
+            ? row.destination_monthly_head_id
+            : row.source_monthly_head_id
+        ) ?? "",
+      label: isIncoming
+        ? `Received from ${
+            nameByMonthlyHead.get(
+              row.source_monthly_head_id
+            ) ?? "a head"
+          }`
+        : `Sent to ${
+            nameByMonthlyHead.get(
+              row.destination_monthly_head_id
+            ) ?? "a head"
+          }`,
+    });
+  }
+
+  for (const row of (movesResult.data ??
+    []) as {
+    amount: number;
+    created_at: string;
+    destination_monthly_head_id: string;
+  }[]) {
+    history.push({
+      id: null,
+      createdAt: row.created_at ?? "",
+      amount: Number(row.amount),
+      forMonth:
+        monthByMonthlyHead.get(
+          row.destination_monthly_head_id
+        ) ?? "",
+      label: "Received from Spending Pool",
+    });
+  }
+
+  history.sort((a, b) =>
+    a.createdAt < b.createdAt ? 1 : -1
+  );
+
+  return {
+    success: true,
+    history: history.slice(0, 10),
+  };
+}
+
+/*
+ * Remove a single Paid / Used entry from a head's history. Log-only -
+ * it does not change the head's current Paid / Used amount or balance.
+ */
+export async function deleteHeadPayment(
+  paymentId: string
+) {
+  const supabase = await createClient();
+
+  const userId = await getAuthUserId(supabase);
+
+  if (!userId) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("head_payments")
+    .delete()
+    .eq("id", paymentId)
+    .eq("user_id", userId);
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  revalidatePath("/dashboard");
+
+  return { success: true };
 }

@@ -75,7 +75,7 @@ export default function LogoutButton() {
     window.setTimeout(() => {
       router.push("/");
       router.refresh();
-    }, 2000);
+    }, 700);
   }
 
   return (

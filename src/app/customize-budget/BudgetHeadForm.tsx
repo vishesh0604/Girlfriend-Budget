@@ -19,6 +19,7 @@ type BudgetHead = {
   name: string;
   headType: string;
   allocation: string;
+  dueDay: string;
 };
 
 type Props = {
@@ -57,6 +58,10 @@ export default function BudgetHeadForm({
       budgetHead?.allocation ?? ""
     );
 
+  const [dueDay, setDueDay] = useState(
+    budgetHead?.dueDay ?? ""
+  );
+
   const [isSaving, setIsSaving] =
     useState(false);
 
@@ -81,7 +86,8 @@ export default function BudgetHeadForm({
       result = await createBudgetHead(
         name,
         headType,
-        allocation
+        allocation,
+        dueDay
       );
     } else {
       if (!budgetHead) {
@@ -96,7 +102,8 @@ export default function BudgetHeadForm({
         budgetHead.id,
         name,
         headType,
-        allocation
+        allocation,
+        dueDay
       );
     }
 
@@ -116,6 +123,7 @@ export default function BudgetHeadForm({
       setName("");
       setHeadType("Fixed Expense");
       setAllocation("");
+      setDueDay("");
     }
 
     runRefresh(() => router.refresh());
@@ -235,6 +243,8 @@ export default function BudgetHeadForm({
           setHeadType={setHeadType}
           allocation={allocation}
           setAllocation={setAllocation}
+          dueDay={dueDay}
+          setDueDay={setDueDay}
           error={error}
           isSaving={isSaving}
           onSave={handleSave}
@@ -260,6 +270,8 @@ export default function BudgetHeadForm({
           setHeadType={setHeadType}
           allocation={allocation}
           setAllocation={setAllocation}
+          dueDay={dueDay}
+          setDueDay={setDueDay}
           error={error}
           isSaving={isSaving}
           onSave={handleSave}
@@ -371,6 +383,8 @@ type FormFieldsProps = {
   setHeadType: (value: string) => void;
   allocation: string;
   setAllocation: (value: string) => void;
+  dueDay: string;
+  setDueDay: (value: string) => void;
   error: string;
   isSaving: boolean;
   onSave: () => void;
@@ -384,6 +398,8 @@ function FormFields({
   setHeadType,
   allocation,
   setAllocation,
+  dueDay,
+  setDueDay,
   error,
   isSaving,
   onSave,
@@ -445,6 +461,54 @@ function FormFields({
           placeholder="0"
           className="w-full rounded-xl border border-[#c9ddea] bg-[#f8fcff] px-4 py-3 text-[#26354d] outline-none focus:border-[#4f8fbd] focus:ring-4 focus:ring-[#cfeeff]"
         />
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-medium text-[#34445e]">
+          Bill due day{" "}
+          <span className="font-normal text-[#647086]">
+            (optional)
+          </span>
+        </label>
+
+        <select
+          value={dueDay}
+          onChange={(e) =>
+            setDueDay(e.target.value)
+          }
+          className="w-full rounded-xl border border-[#c9ddea] bg-[#f8fcff] px-4 py-3 text-[#26354d] outline-none focus:border-[#4f8fbd] focus:ring-4 focus:ring-[#cfeeff]"
+        >
+          <option value="">
+            No due date
+          </option>
+
+          {Array.from(
+            { length: 31 },
+            (_, index) => index + 1
+          ).map((day) => (
+            <option
+              key={day}
+              value={String(day)}
+            >
+              {day}
+              {day === 1 ||
+              day === 21 ||
+              day === 31
+                ? "st"
+                : day === 2 || day === 22
+                ? "nd"
+                : day === 3 || day === 23
+                ? "rd"
+                : "th"}{" "}
+              of the month
+            </option>
+          ))}
+        </select>
+
+        <p className="mt-1.5 text-xs text-[#647086]">
+          Shows a reminder on the Fixed Expenses
+          card as the day approaches.
+        </p>
       </div>
 
       {error && (

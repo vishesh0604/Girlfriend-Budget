@@ -31,12 +31,12 @@ export default function SetupPage() {
   const [success, setSuccess] = useState("");
 
   async function loadHeads() {
-    setLoading(true);
-    setError("");
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    setLoading(true);
+    setError("");
 
     if (!user) {
       setError("You must be signed in.");
@@ -63,6 +63,9 @@ export default function SetupPage() {
   }
 
   useEffect(() => {
+    // One-time fetch on mount; loadHeads only sets state after its first
+    // await, so there is no synchronous cascade.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadHeads();
   }, []);
 

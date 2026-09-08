@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUserId } from "@/lib/supabase/authUser";
 import {
   calculateHeadState,
   calculateSpendingPool,
@@ -56,11 +56,9 @@ export default async function DashboardPage({
 }: DashboardPageProps) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     redirect("/");
   }
 
@@ -72,7 +70,7 @@ export default async function DashboardPage({
    * month. Otherwise, preserve the existing behavior
    * of opening the latest existing month.
    */
-  let requestedMonth = isValidMonthStart(
+  const requestedMonth = isValidMonthStart(
     params.month
   )
     ? params.month
@@ -87,7 +85,7 @@ export default async function DashboardPage({
     } = await supabase
       .from("monthly_budgets")
       .select("id, month_start, salary")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("month_start", requestedMonth)
       .maybeSingle();
 
@@ -122,7 +120,7 @@ export default async function DashboardPage({
             .select(
               "id, month_start, salary"
             )
-            .eq("user_id", user.id)
+            .eq("user_id", userId)
             .eq(
               "month_start",
               requestedMonth
@@ -160,7 +158,7 @@ export default async function DashboardPage({
         .select(
             "id, month_start, salary"
         )
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq(
             "month_start",
             requestedMonth
@@ -193,7 +191,7 @@ export default async function DashboardPage({
       .select(
         "id, month_start, salary"
       )
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq(
         "month_start",
         currentMonth
@@ -227,7 +225,7 @@ export default async function DashboardPage({
           .select(
             "id, month_start, salary"
           )
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .eq(
             "month_start",
             currentMonth
@@ -248,58 +246,61 @@ export default async function DashboardPage({
         refreshed.data;
     }
   }
-  const {
-    data: monthlyHeads,
-    error: monthlyHeadsError,
-  } = await supabase
-    .from("monthly_budget_heads")
-    .select(`
-      id,
-      budget_head_id,
-      allocated_amount,
-      carry_forward,
-      paid_amount,
-      note,
-      budget_heads (
-        name,
-        head_type
+  const [
+    monthlyHeadsResult,
+    transfersResult,
+  ] = await Promise.all([
+    supabase
+      .from("monthly_budget_heads")
+      .select(`
+        id,
+        budget_head_id,
+        allocated_amount,
+        carry_forward,
+        paid_amount,
+        note,
+        budget_heads (
+          name,
+          head_type,
+          due_day,
+          sort_order
+        )
+      `)
+      .eq("user_id", userId)
+      .eq(
+        "monthly_budget_id",
+        monthlyBudget.id
       )
-    `)
-    .eq("user_id", user.id)
-    .eq(
-      "monthly_budget_id",
-      monthlyBudget.id
-    )
-    .order("created_at", {
-      ascending: true,
-    });
+      .order("created_at", {
+        ascending: true,
+      }),
+    supabase
+      .from("transfers")
+      .select(
+        "id, source_monthly_head_id, destination_monthly_head_id, amount, created_at"
+      )
+      .eq("user_id", userId)
+      .eq(
+        "monthly_budget_id",
+        monthlyBudget.id
+      )
+      .order("created_at", {
+        ascending: false,
+      }),
+  ]);
 
-  if (monthlyHeadsError) {
+  const monthlyHeads = monthlyHeadsResult.data;
+  const transfers = transfersResult.data;
+
+  if (monthlyHeadsResult.error) {
     throw new Error(
-      monthlyHeadsError.message
+      monthlyHeadsResult.error.message
     );
   }
 
-  const {
-    data: transfers,
-    error: transfersError,
-  } = await supabase
-    .from("transfers")
-    .select(
-      "id, source_monthly_head_id, destination_monthly_head_id, amount, created_at"
-    )
-    .eq("user_id", user.id)
-    .eq(
-      "monthly_budget_id",
-      monthlyBudget.id
-    )
-    .order("created_at", {
-      ascending: false,
-    });
-
-  if (transfersError) {
+  if (transfersResult.error) {
     throw new Error(
-      transfersError.message
+      transfersResult.error.message
     );
   }
 
@@ -323,7 +324,7 @@ export default async function DashboardPage({
   const spendingMoveRecords =
     await loadSpendingMoveTransferRecords(
       supabase,
-      user.id,
+      userId,
       (monthlyHeads ?? []).map(
         (head) => head.id
       )
@@ -383,50 +384,21 @@ export default async function DashboardPage({
       headType:
         budgetHead?.head_type ??
         "Other",
+      dueDay:
+        (budgetHead?.due_day as
+          | number
+          | null) ?? null,
+      sortOrder:
+        Number(budgetHead?.sort_order) ||
+        Number.MAX_SAFE_INTEGER,
       state,
     };
   });
 
-  const headOrder = [
-    ["Home Rent"],
-    ["Electricity"],
-    ["Gym"],
-    ["Appliance Rent", "Appliances Rent"],
-    ["WiFi"],
-    ["Apple Plus"],
-    ["Maid"],
-    ["Garbage Man"],
-    ["Investment"],
-    ["Savings", "Saving"],
-  ];
-
-  const normalizedHeadOrder = new Map<
-    string,
-    number
-  >();
-
-  headOrder.forEach((names, index) => {
-    names.forEach((name) => {
-      normalizedHeadOrder.set(
-        name.toLowerCase(),
-        index
-      );
-    });
-  });
-
-  headStates.sort((a, b) => {
-    const aOrder =
-      normalizedHeadOrder.get(
-        a.name.toLowerCase()
-      ) ?? Number.MAX_SAFE_INTEGER;
-
-    const bOrder =
-      normalizedHeadOrder.get(
-        b.name.toLowerCase()
-      ) ?? Number.MAX_SAFE_INTEGER;
-
-    return aOrder - bOrder;
-  });
+  // Order by the sort_order the user set in Customize Budget.
+  headStates.sort(
+    (a, b) => a.sortOrder - b.sortOrder
+  );
 
   /*
    * Find the most recent transfer for each
@@ -664,6 +636,35 @@ export default async function DashboardPage({
 
             <div>
             <p className="font-semibold text-[#26354d]">
+                Bill due reminder
+            </p>
+            <p className="mt-1">
+                If a head has a bill due day set (in
+                Customize Budget), a tag shows next to its
+                name &mdash; &ldquo;Home Rent (due in 12
+                days)&rdquo;, &ldquo;due today&rdquo;, or
+                &ldquo;overdue by 3 days&rdquo;. It stays
+                visible all month as long as the head
+                isn&apos;t fully paid, and turns red once
+                it&apos;s due or overdue.
+            </p>
+            </div>
+
+            <div>
+            <p className="font-semibold text-[#26354d]">
+                History
+            </p>
+            <p className="mt-1">
+                The &ldquo;History&rdquo; button on each
+                card opens that head&apos;s money log &mdash;
+                payments, fund moves and pool top-ups. It
+                has its own ? inside the popup for a full
+                explanation.
+            </p>
+            </div>
+
+            <div>
+            <p className="font-semibold text-[#26354d]">
                 Push Remaining
             </p>
             <p className="mt-1">
@@ -840,7 +841,14 @@ export default async function DashboardPage({
                     monthlyBudgetId={
                       monthlyBudget.id
                     }
+                    budgetHeadId={
+                      head.budget_head_id
+                    }
                     name={head.name}
+                    dueDay={head.dueDay}
+                    monthStart={
+                      monthlyBudget.month_start
+                    }
                     allocation={Number(
                       head.allocated_amount
                     )}

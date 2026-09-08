@@ -14,11 +14,11 @@ export default function DeveloperLogsButton() {
    * This list stays at five entries.
    */
   const changes = [
+    "Fixed Expenses budget heads can now have a bill due day, set in Customize Budget, that shows a live reminder next to the head's name ('due in 3 days', 'due today', 'overdue by 2 days'). Each card also has a 'History' button opening a log of every payment, fund move and pool top-up for that head, with money out shown red and money in shown green.",
+    "Budget heads can be dragged into any order from a new button in Customize Budget, and the home page shows a month-end reminder from the 28th (26th in February) with whatever is still unspent in the spending pool and a link to move it.",
     "Fixed Expenses cards now show a green '+ X from Spending Pool' note on Remaining when money was moved in from Daily Spending, so Remaining above Allocated makes sense; tap it to jump to the move. The By category card gained a green 'Credit' button, and the 'Monthly report' button downloads a one-page PDF for any date range.",
     "Made Daily Spending fast: adding, editing or deleting anything responds instantly while the save runs in the background, the page loads its data in parallel, and every popup got a quick open animation.",
     "Added a 'By category' pie chart to Daily Spending: an animated donut of the whole spending pool with amounts and percentages, plus per-category colours you set in Manage categories that carry through to the chart and the activity list.",
-    "Added per-month credits to Daily Spending (extra money shown green in one Activity feed), a site-wide loading strip during saves, and a uniform X close button on every help and Developer Logs popup.",
-    "Added the Daily Spending Tracker: log day-to-day expenses against your spending pool, with a month calendar overview, custom categories, and 'move remaining' to next month or any fixed budget head.",
   ];
 
   return (
@@ -90,7 +90,7 @@ export default function DeveloperLogsButton() {
                       </div>
 
                       <span className="shrink-0 text-xs text-[#647086]">
-                        1:47 AM
+                        10:42 PM
                       </span>
                     </div>
 
