@@ -14,11 +14,11 @@ export default function DeveloperLogsButton() {
    * This list stays at five entries.
    */
   const changes = [
+    "Added a 'By category' pie chart to Daily Spending: an animated donut of the whole spending pool with amounts and percentages, plus per-category colours you set in Manage categories that carry through to the chart and the activity list.",
+    "Added per-month credits to Daily Spending (extra money shown green in one Activity feed), a site-wide loading strip during saves, and a uniform X close button on every help and Developer Logs popup.",
     "Added the Daily Spending Tracker: log day-to-day expenses against your spending pool, with a month calendar overview, custom categories, and 'move remaining' to next month or any fixed budget head.",
     "Renamed Dashboard to 'Fixed Expenses'; styled every confirmation popup; salary edits now flow into future months; Reverse Push now works from the receiving month.",
     "Added a 'Pay in full' button and an editable Notes field to every budget-head card.",
-    "Renamed 'Transfer' to 'Move funds' across the app and made the budget-head cards more compact.",
-    "Fixed Budget Head not updating, and duplicacy of Paid/Used Value",
   ];
 
   return (
@@ -85,12 +85,12 @@ export default function DeveloperLogsButton() {
                         </p>
 
                         <p className="mt-1 text-xs text-[#647086]">
-                          06 September 2026
+                          08 September 2026
                         </p>
                       </div>
 
                       <span className="shrink-0 text-xs text-[#647086]">
-                        6:23 PM
+                        10:15 PM
                       </span>
                     </div>
 
