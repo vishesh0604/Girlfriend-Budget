@@ -1,4 +1,4 @@
-import PageTransition from "@/components/PageTransition";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./LogoutButton";
@@ -92,9 +92,9 @@ export default async function HomePage() {
           </div>
 
           <div className="grid gap-5 md:grid-cols-3">
-            <PageTransition
+            <Link
               href="/dashboard"
-              type="dashboard"
+              prefetch
               className="group flex flex-col rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe8f0] text-[#4f8fbd]">
@@ -132,11 +132,11 @@ export default async function HomePage() {
               <div className="mt-auto pt-6 font-medium text-[#3978a5]">
                 Open Fixed Expenses →
               </div>
-            </PageTransition>
+            </Link>
 
-            <PageTransition
+            <Link
               href="/daily-spending"
-              type="dailySpending"
+              prefetch
               className="group flex flex-col rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe8f0] text-[#4f8fbd]">
@@ -175,11 +175,11 @@ export default async function HomePage() {
               <div className="mt-auto pt-6 font-medium text-[#3978a5]">
                 Open Daily Spending →
               </div>
-            </PageTransition>
+            </Link>
 
-            <PageTransition
+            <Link
               href="/customize-budget"
-              type="customize"
+              prefetch
               className="group flex flex-col rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe8f0] text-[#d96b91]">
@@ -212,7 +212,7 @@ export default async function HomePage() {
               <div className="mt-auto pt-6 font-medium text-[#c4567d]">
                 Open Customize Budget →
               </div>
-            </PageTransition>
+            </Link>
           </div>
 
           <div className="mt-8 text-center">
