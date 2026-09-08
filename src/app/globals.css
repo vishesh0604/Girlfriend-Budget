@@ -257,3 +257,31 @@ a:hover {
     transform: translateX(400%);
   }
 }
+
+/* -------------------------------------------------------
+   SPENDING BREAKDOWN CHART (pie popup)
+------------------------------------------------------- */
+
+@keyframes chart-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes chart-legend-in {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

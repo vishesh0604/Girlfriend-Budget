@@ -16,6 +16,7 @@ import {
   dayFromEntryDate,
   buildEntryDate,
 } from "./dateHelpers";
+import { readableTextOn } from "./categoryColors";
 
 type CategoryOption = {
   id: string;
@@ -27,6 +28,7 @@ type SpendingEntry = {
   entryDate: string;
   categoryId: string;
   categoryName: string;
+  categoryColor: string | null;
   amount: number;
   note: string;
 };
@@ -259,7 +261,24 @@ export default function SpendingEntryRow({
             {formatEntryDate(entry.entryDate)}
           </span>
 
-          <span className="shrink-0 rounded-full bg-[#cfeeff] px-2 py-0.5 text-[10px] font-medium text-[#3978a5]">
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+              entry.categoryColor
+                ? ""
+                : "bg-[#cfeeff] text-[#3978a5]"
+            }`}
+            style={
+              entry.categoryColor
+                ? {
+                    backgroundColor:
+                      entry.categoryColor,
+                    color: readableTextOn(
+                      entry.categoryColor
+                    ),
+                  }
+                : undefined
+            }
+          >
             {entry.categoryName}
           </span>
 

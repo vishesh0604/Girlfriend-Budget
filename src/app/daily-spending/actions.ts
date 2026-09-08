@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getSpendingSnapshot } from "./spendingSnapshot";
+import { isValidCategoryColor } from "./categoryColors";
 
 const DEFAULT_CATEGORIES = [
   "Food",
@@ -189,9 +190,10 @@ export async function createSpendingCategory(
   return { success: true };
 }
 
-export async function renameSpendingCategory(
+export async function updateSpendingCategory(
   categoryId: string,
-  name: string
+  name: string,
+  color: string | null
 ) {
   const supabase = await createClient();
 
@@ -222,6 +224,19 @@ export async function renameSpendingCategory(
     };
   }
 
+  let normalizedColor: string | null = null;
+
+  if (color !== null && color !== "") {
+    if (!isValidCategoryColor(color)) {
+      return {
+        success: false,
+        error: "That colour is not valid.",
+      };
+    }
+
+    normalizedColor = color.toLowerCase();
+  }
+
   const {
     data: duplicates,
     error: duplicatesError,
@@ -250,6 +265,7 @@ export async function renameSpendingCategory(
     .from("spending_categories")
     .update({
       name: trimmed,
+      color: normalizedColor,
       updated_at: new Date().toISOString(),
     })
     .eq("id", categoryId)

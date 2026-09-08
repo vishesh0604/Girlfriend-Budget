@@ -2,6 +2,8 @@
 
 import { ReactNode, useState } from "react";
 
+import PopupCloseButton from "@/components/PopupCloseButton";
+
 type HelpButtonProps = {
   title: string;
   children: ReactNode;
@@ -35,9 +37,13 @@ export default function HelpButton({
             }
           }}
         >
-          <div className="w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-hidden rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] shadow-xl">
+          <div className="relative w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-hidden rounded-3xl border border-[#f3b9cd] bg-[#ffdce9] shadow-xl">
+            <PopupCloseButton
+              onClick={() => setOpen(false)}
+            />
+
             <div className="help-popup-scrollbar max-h-[calc(100vh-3rem)] overflow-y-auto overscroll-contain p-6 pr-5">
-              <h2 className="text-lg font-semibold tracking-tight text-[#26354d]">
+              <h2 className="pr-12 text-lg font-semibold tracking-tight text-[#26354d]">
                 {title}
               </h2>
 

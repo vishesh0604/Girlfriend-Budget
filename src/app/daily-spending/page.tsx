@@ -8,6 +8,7 @@ import HomeButton from "./HomeButton";
 import SpendingToolbar from "./SpendingToolbar";
 import SpendingEntryRow from "./SpendingEntryRow";
 import SpendingCreditRow from "./SpendingCreditRow";
+import SpendingBreakdownChart from "./SpendingBreakdownChart";
 import { getSpendingSnapshot } from "./spendingSnapshot";
 import {
   ensureDefaultSpendingCategories,
@@ -190,7 +191,7 @@ export default async function DailySpendingPage({
     error: categoriesError,
   } = await supabase
     .from("spending_categories")
-    .select("id, name, is_default")
+    .select("id, name, is_default, color")
     .eq("user_id", user.id)
     .order("is_default", { ascending: true })
     .order("name", { ascending: true });
@@ -252,6 +253,9 @@ export default async function DailySpendingPage({
       name: category.name as string,
       isDefault:
         category.is_default as boolean,
+      color:
+        (category.color as string | null) ??
+        null,
       entryCount:
         entryCountByCategory.get(
           category.id as string
@@ -264,6 +268,13 @@ export default async function DailySpendingPage({
       id: category.id,
       name: category.name,
     })
+  );
+
+  const categoryColorById = new Map(
+    categoryList.map((category) => [
+      category.id,
+      category.color,
+    ])
   );
 
   const entries = (entryRows ?? []).map(
@@ -282,6 +293,10 @@ export default async function DailySpendingPage({
         categoryName:
           (category?.name as string) ??
           "Uncategorised",
+        categoryColor:
+          categoryColorById.get(
+            row.category_id as string
+          ) ?? null,
         amount: Number(row.amount),
         note: (row.note as string) ?? "",
       };
@@ -404,7 +419,8 @@ export default async function DailySpendingPage({
     0
   ).getDate();
 
-  // Category breakdown for the month.
+  // Category breakdown for the month, keyed by id so a category's
+  // assigned colour follows it even if two share a name.
   const spentByCategory = new Map<
     string,
     number
@@ -412,19 +428,30 @@ export default async function DailySpendingPage({
 
   for (const entry of entries) {
     spentByCategory.set(
-      entry.categoryName,
+      entry.categoryId,
       (spentByCategory.get(
-        entry.categoryName
+        entry.categoryId
       ) ?? 0) + entry.amount
     );
   }
 
+  const categoryNameById = new Map(
+    categoryList.map((category) => [
+      category.id,
+      category.name,
+    ])
+  );
+
   const breakdown = Array.from(
     spentByCategory.entries()
   )
-    .map(([name, amount]) => ({
-      name,
+    .map(([id, amount]) => ({
+      name:
+        categoryNameById.get(id) ??
+        "Uncategorised",
       amount,
+      color:
+        categoryColorById.get(id) ?? null,
     }))
     .sort((a, b) => b.amount - a.amount);
 
@@ -563,8 +590,11 @@ export default async function DailySpendingPage({
                   </p>
                   <p className="mt-1">
                     Add, rename or delete the categories you tag
-                    expenses with. Deleting one moves its expenses
-                    to Miscellaneous; the expenses are kept.
+                    expenses with, and give each one a colour. That
+                    colour shows on the category everywhere &mdash;
+                    the Activity list and the pie chart. Deleting a
+                    category moves its expenses to Miscellaneous; the
+                    expenses are kept.
                   </p>
                 </div>
 
@@ -574,7 +604,9 @@ export default async function DailySpendingPage({
                   </p>
                   <p className="mt-1">
                     A breakdown of how much you spent per category
-                    this month.
+                    this month. Tap View chart for a pie of the
+                    whole spending pool, each category and what is
+                    left, with amounts and percentages.
                   </p>
                 </div>
 
@@ -672,9 +704,18 @@ export default async function DailySpendingPage({
 
         {breakdown.length > 0 && (
           <section className="mt-4 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
-            <p className="text-sm font-semibold">
-              By category
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold">
+                By category
+              </p>
+
+              <SpendingBreakdownChart
+                categories={breakdown}
+                movedOut={snapshot.movedOut}
+                remaining={remaining}
+                pool={spendingAvailable}
+              />
+            </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
               {breakdown.map((item) => (

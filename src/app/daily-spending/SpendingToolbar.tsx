@@ -17,6 +17,7 @@ type CategoryListItem = {
   id: string;
   name: string;
   isDefault: boolean;
+  color: string | null;
   entryCount: number;
 };
 
@@ -25,6 +26,7 @@ type SpendingEntry = {
   entryDate: string;
   categoryId: string;
   categoryName: string;
+  categoryColor: string | null;
   amount: number;
   note: string;
 };

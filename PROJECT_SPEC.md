@@ -40,6 +40,11 @@ CURRENT_STATE.md holds the detailed implementation status.
 - Site-wide top loading strip (RefreshProvider in the root layout) shows
   during any mutation's action + refresh. The Daily Spending header
   actions collapse into a "More" menu on mobile.
+- Daily Spending "By category" card has a "View chart" popup: an animated
+  donut of the whole spending pool (categories + moved out + remaining)
+  with an amount/percentage legend.
+- Each spending category can be assigned a colour in Manage categories;
+  the colour drives its pie slice and its Activity-list pill.
 
 ## To Do
 
@@ -1358,6 +1363,13 @@ Each expense has exactly four fields:
   in N expenses. Delete it?"). On confirm, the category is removed and its
   expenses are reassigned to "Miscellaneous" - the expenses themselves are
   never deleted.
+- Each category can be given a colour (Edit in the Manage categories
+  popup: a swatch grid plus "Auto"). The colour follows the category
+  everywhere - the Activity-list category pill is filled with it (text
+  auto-set to black/white for contrast) and the By category pie uses it
+  for that category's slice. "Auto" (no colour stored) falls back to a
+  fixed positional palette in the pie and the default blue pill in the
+  list.
 
 ## The money model
 
@@ -1432,6 +1444,12 @@ Credits(M) > 0.
 - Calendar grid ("Month overview" popup): each day cell shows that day's
   expense total; tap a day to view and add its expenses. Expense-only.
 - Category breakdown: total spent per category for the month. Expense-only.
+  A "View chart" button opens a popup with an animated donut of the whole
+  spending pool - one slice per category, then "Moved out" (if any), then
+  "Remaining" - with a legend of amount + percentage per slice. Slice
+  colours come from each category's assigned colour (positional palette
+  fallback). If spending exceeds the pool, Remaining drops out and an
+  "over by X" note shows.
 - Activity list: expenses and credits in one feed, newest first; each row
   is editable and deletable. Expense rows baby-pink, credit rows green.
 - "Move remaining" action
@@ -1449,7 +1467,8 @@ month never rewrites past months.
 
 ## Data
 
-    spending_categories   id, user_id, name, is_default, created_at, updated_at
+    spending_categories   id, user_id, name, is_default, color (nullable,
+                          '#rrggbb'), created_at, updated_at
     spending_entries      id, user_id, entry_date, category_id, amount,
                           note, created_at, updated_at
     spending_credits      id, user_id, entry_date, amount, note,

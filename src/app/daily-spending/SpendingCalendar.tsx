@@ -23,6 +23,7 @@ type SpendingEntry = {
   entryDate: string;
   categoryId: string;
   categoryName: string;
+  categoryColor: string | null;
   amount: number;
   note: string;
 };

@@ -6,14 +6,19 @@ import { useRouter } from "next/navigation";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   createSpendingCategory,
-  renameSpendingCategory,
+  updateSpendingCategory,
   deleteSpendingCategory,
 } from "./actions";
+import {
+  CATEGORY_COLOR_PRESETS,
+  readableTextOn,
+} from "./categoryColors";
 
 type Category = {
   id: string;
   name: string;
   isDefault: boolean;
+  color: string | null;
   entryCount: number;
 };
 
@@ -36,6 +41,9 @@ export default function ManageCategoriesButton({
     string | null
   >(null);
   const [editName, setEditName] = useState("");
+  const [editColor, setEditColor] = useState<
+    string | null
+  >(null);
   const [savingEdit, setSavingEdit] =
     useState(false);
   const [editError, setEditError] = useState("");
@@ -92,10 +100,11 @@ export default function ManageCategoriesButton({
   function startEdit(category: Category) {
     setEditingId(category.id);
     setEditName(category.name);
+    setEditColor(category.color);
     setEditError("");
   }
 
-  async function handleRename() {
+  async function handleSaveEdit() {
     if (!editingId) {
       return;
     }
@@ -104,15 +113,16 @@ export default function ManageCategoriesButton({
     setSavingEdit(true);
 
     const result =
-      await renameSpendingCategory(
+      await updateSpendingCategory(
         editingId,
-        editName
+        editName,
+        editColor
       );
 
     if (!result.success) {
       setEditError(
         result.error ??
-          "Unable to rename category."
+          "Unable to update category."
       );
       setSavingEdit(false);
       return;
@@ -178,7 +188,9 @@ export default function ManageCategoriesButton({
               </h2>
 
               <p className="mt-1 text-sm leading-6 text-[#647086]">
-                Categories are labels for your expenses. Deleting one
+                Categories are labels for your expenses. Give one a
+                colour and it shows on that category everywhere — the
+                Activity list and the By category chart. Deleting one
                 moves its expenses to Miscellaneous — the expenses are
                 kept.
               </p>
@@ -246,11 +258,71 @@ export default function ManageCategoriesButton({
                             className="w-full rounded-lg border border-[#c9ddea] bg-[#f8fcff] px-3 py-2 text-sm outline-none focus:border-[#4f8fbd]"
                           />
 
-                          <div className="mt-2 flex gap-2">
+                          <p className="mt-3 text-xs font-medium text-[#647086]">
+                            Colour
+                          </p>
+
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditColor(null)
+                              }
+                              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                                editColor === null
+                                  ? "border-[#26354d] bg-[#26354d] text-white"
+                                  : "border-[#c9ddea] bg-[#f8fcff] text-[#647086] hover:bg-white"
+                              }`}
+                            >
+                              Auto
+                            </button>
+
+                            {CATEGORY_COLOR_PRESETS.map(
+                              (preset) => (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  aria-label={`Use ${preset}`}
+                                  onClick={() =>
+                                    setEditColor(
+                                      preset
+                                    )
+                                  }
+                                  style={{
+                                    backgroundColor:
+                                      preset,
+                                  }}
+                                  className={`flex h-6 w-6 items-center justify-center rounded-full transition ${
+                                    editColor ===
+                                    preset
+                                      ? "ring-2 ring-[#26354d] ring-offset-2 ring-offset-[#ffe8f0]"
+                                      : "ring-1 ring-black/10"
+                                  }`}
+                                >
+                                  {editColor ===
+                                    preset && (
+                                    <span
+                                      className="text-xs font-bold"
+                                      style={{
+                                        color:
+                                          readableTextOn(
+                                            preset
+                                          ),
+                                      }}
+                                    >
+                                      ✓
+                                    </span>
+                                  )}
+                                </button>
+                              )
+                            )}
+                          </div>
+
+                          <div className="mt-3 flex gap-2">
                             <button
                               type="button"
                               onClick={
-                                handleRename
+                                handleSaveEdit
                               }
                               disabled={busy}
                               className="rounded-lg bg-zinc-950 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
@@ -286,6 +358,23 @@ export default function ManageCategoriesButton({
                       ) : (
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex min-w-0 items-center gap-2">
+                            <span
+                              aria-hidden="true"
+                              className={`h-3 w-3 shrink-0 rounded-full ${
+                                category.color
+                                  ? ""
+                                  : "border border-dashed border-[#b9879b]"
+                              }`}
+                              style={
+                                category.color
+                                  ? {
+                                      backgroundColor:
+                                        category.color,
+                                    }
+                                  : undefined
+                              }
+                            />
+
                             <span className="truncate text-sm font-medium text-[#26354d]">
                               {category.name}
                             </span>
@@ -308,7 +397,7 @@ export default function ManageCategoriesButton({
                               disabled={busy}
                               className="text-xs font-medium text-[#3978a5] underline underline-offset-4 hover:text-[#26354d] disabled:cursor-not-allowed disabled:text-zinc-400"
                             >
-                              Rename
+                              Edit
                             </button>
 
                             {!category.isDefault && (
