@@ -3,21 +3,22 @@
 // hex-format check below (custom picks are allowed too), and the first
 // eight double as the positional fallback for categories left on "Auto".
 
+// Pastels spaced around the hue wheel - each is clearly its own colour,
+// no two are close in shade. Order also drives the positional fallback
+// for categories left on "Auto".
 export const CATEGORY_COLOR_PRESETS = [
-  "#2a78d6",
-  "#eb6834",
-  "#1baf7a",
-  "#eda100",
-  "#e87ba4",
-  "#008300",
-  "#4a3aa7",
-  "#e34948",
-  "#0f9b9b",
-  "#d4488a",
-  "#a855f7",
-  "#5b7c1f",
-  "#c2620c",
-  "#64748b",
+  "#f4a6a6", // coral red
+  "#f7c4a1", // peach
+  "#f2dca3", // sand
+  "#e6e7a2", // butter
+  "#c2e3a2", // lime
+  "#9fddb8", // green
+  "#98d8d8", // teal
+  "#a2c8ee", // sky blue
+  "#b0b2ec", // periwinkle
+  "#c9abe6", // lavender
+  "#e4a8db", // orchid
+  "#f3a8c6", // pink
 ];
 
 export function isValidCategoryColor(

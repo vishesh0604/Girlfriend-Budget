@@ -27,9 +27,9 @@ type SpendingBreakdownChartProps = {
 const CATEGORY_COLORS =
   CATEGORY_COLOR_PRESETS.slice(0, 8);
 
-const OTHER_COLOR = "#a8a29e";
-const MOVED_COLOR = "#8b93a0";
-const REMAINING_COLOR = "#c3ccd6";
+const OTHER_COLOR = "#cbc7c3";
+const MOVED_COLOR = "#9aa1ad";
+const REMAINING_COLOR = "#d7dde4";
 
 const RADIUS = 82;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
