@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import {
@@ -34,6 +35,7 @@ type BudgetHeadEditorProps = {
   allocation: number;
   paidAmount: number;
   remaining: number;
+  fromSpendingPool: number;
   note: string;
   transferOptions: TransferOption[];
   recentTransfer?: RecentTransfer;
@@ -46,6 +48,7 @@ export default function BudgetHeadEditor({
   allocation,
   paidAmount,
   remaining,
+  fromSpendingPool,
   note,
   transferOptions,
   recentTransfer,
@@ -538,6 +541,22 @@ export default function BudgetHeadEditor({
             ₹
             {remaining.toLocaleString(
               "en-IN"
+            )}
+            {fromSpendingPool > 0 && (
+              <span className="ml-1 text-[12px] font-medium text-emerald-600">
+                (+₹
+                {fromSpendingPool.toLocaleString(
+                  "en-IN"
+                )}{" "}
+                from{" "}
+                <Link
+                  href="/daily-spending?move=1"
+                  className="underline underline-offset-2 hover:text-emerald-700"
+                >
+                  Spending Pool
+                </Link>
+                )
+              </span>
             )}
           </p>
         </div>

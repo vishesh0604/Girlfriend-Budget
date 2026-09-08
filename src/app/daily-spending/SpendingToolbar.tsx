@@ -53,6 +53,7 @@ type SpendingToolbarProps = {
   entries: SpendingEntry[];
   fixedHeads: FixedHead[];
   moves: ExistingMove[];
+  openMoveRemaining: boolean;
 };
 
 export default function SpendingToolbar(
@@ -69,6 +70,7 @@ export default function SpendingToolbar(
     entries,
     fixedHeads,
     moves,
+    openMoveRemaining,
   } = props;
 
   const [moreOpen, setMoreOpen] = useState(false);
@@ -115,6 +117,19 @@ export default function SpendingToolbar(
 
   return (
     <>
+      {/* Arriving from the Fixed Expenses "Spending Pool" link - one
+          instance, mounted at the root so the responsive split doesn't
+          hide it, opens the Move remaining modal on load. */}
+      {openMoveRemaining && (
+        <MoveRemainingButton
+          monthStart={monthStart}
+          remaining={remaining}
+          fixedHeads={fixedHeads}
+          moves={moves}
+          autoOpen
+        />
+      )}
+
       {/* Desktop: all buttons inline */}
       <div className="hidden flex-wrap items-center gap-2 sm:flex">
         {addExpense}

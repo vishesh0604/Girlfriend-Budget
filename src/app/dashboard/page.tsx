@@ -334,6 +334,22 @@ export default async function DashboardPage({
     ...spendingMoveRecords,
   ];
 
+  // Total moved into each head from the Daily Spending pool this month -
+  // shown on the card so "Remaining above Allocated" isn't a mystery.
+  const spendingPoolInByHead = new Map<
+    string,
+    number
+  >();
+
+  for (const record of spendingMoveRecords) {
+    spendingPoolInByHead.set(
+      record.destinationHeadId,
+      (spendingPoolInByHead.get(
+        record.destinationHeadId
+      ) ?? 0) + (record.amount ?? 0)
+    );
+  }
+
   const headStates = (
     monthlyHeads ?? []
   ).map((head) => {
@@ -637,7 +653,12 @@ export default async function DashboardPage({
             <p className="mt-1">
                 Each budget head shows its allocation, paid/used amount,
                 fund moves, and current remaining balance. The remaining balance
-                is updated as you make changes.
+                is updated as you make changes. If you have sent money into a
+                head from the Daily Spending pool (via Move remaining), the
+                Remaining line shows a green &ldquo;+ X from Spending Pool&rdquo;
+                note &mdash; that&apos;s why Remaining can be above Allocated.
+                Tap &ldquo;Spending Pool&rdquo; in that note to jump to the
+                Move remaining list.
             </p>
             </div>
 
@@ -828,6 +849,11 @@ export default async function DashboardPage({
                     )}
                     remaining={
                       head.state.finalBalance
+                    }
+                    fromSpendingPool={
+                      spendingPoolInByHead.get(
+                        head.id
+                      ) ?? 0
                     }
                     note={head.note ?? ""}
                     transferOptions={

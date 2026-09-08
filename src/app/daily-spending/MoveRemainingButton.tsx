@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useRefresh } from "@/components/RefreshProvider";
@@ -26,6 +26,9 @@ type MoveRemainingButtonProps = {
   remaining: number;
   fixedHeads: FixedHead[];
   moves: ExistingMove[];
+  // Popped open by the Fixed Expenses "Spending Pool" link. When set, this
+  // instance renders only the modal (no trigger button).
+  autoOpen?: boolean;
 };
 
 const NEXT_MONTH_VALUE = "next_month";
@@ -41,12 +44,29 @@ export default function MoveRemainingButton({
   remaining,
   fixedHeads,
   moves,
+  autoOpen = false,
 }: MoveRemainingButtonProps) {
   const router = useRouter();
 
   const { runRefresh } = useRefresh();
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
+
+  // Strip ?move=1 so a refresh doesn't re-open the modal.
+  useEffect(() => {
+    if (
+      autoOpen &&
+      typeof window !== "undefined"
+    ) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("move");
+      window.history.replaceState(
+        null,
+        "",
+        url.toString()
+      );
+    }
+  }, [autoOpen]);
   const [amount, setAmount] = useState("");
   const [destination, setDestination] = useState(
     NEXT_MONTH_VALUE
@@ -142,13 +162,15 @@ export default function MoveRemainingButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={handleOpen}
-        className="rounded-xl border border-[#f3b9cd] bg-[#ffdce9] px-4 py-2 text-sm font-medium text-[#c4567d] shadow-sm transition hover:bg-[#ffe8f0]"
-      >
-        Move remaining
-      </button>
+      {!autoOpen && (
+        <button
+          type="button"
+          onClick={handleOpen}
+          className="rounded-xl border border-[#f3b9cd] bg-[#ffdce9] px-4 py-2 text-sm font-medium text-[#c4567d] shadow-sm transition hover:bg-[#ffe8f0]"
+        >
+          Move remaining
+        </button>
+      )}
 
       {open && (
         <div

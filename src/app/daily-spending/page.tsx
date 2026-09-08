@@ -20,6 +20,7 @@ import {
 type DailySpendingPageProps = {
   searchParams: Promise<{
     month?: string;
+    move?: string;
   }>;
 };
 
@@ -606,6 +607,9 @@ export default async function DailySpendingPage({
                     How much you spent per category this month. Each
                     category is a button &mdash; tap it to see every
                     expense in that category with a running total.
+                    If the month has any credits, a green
+                    &ldquo;Credit&rdquo; button appears too, listing
+                    them the same way.
                   </p>
                 </div>
 
@@ -657,6 +661,7 @@ export default async function DailySpendingPage({
             entries={entries}
             fixedHeads={fixedHeads}
             moves={moves}
+            openMoveRemaining={params.move === "1"}
           />
         </div>
 
@@ -724,7 +729,8 @@ export default async function DailySpendingPage({
           </div>
         </section>
 
-        {breakdown.length > 0 && (
+        {(breakdown.length > 0 ||
+          credits.length > 0) && (
           <section className="mt-4 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">
@@ -748,6 +754,7 @@ export default async function DailySpendingPage({
             <CategoryBreakdown
               items={breakdown}
               entries={entries}
+              credits={credits}
               monthStart={monthStart}
             />
           </section>
