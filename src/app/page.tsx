@@ -93,13 +93,13 @@ export default function HomePage() {
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#e5f6ff] px-4">
 
       {/* Decorative background shapes */}
-      <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#cfeeff]" />
+      <div className="bg-blob bg-blob-a pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#cfeeff]" />
 
-      <div className="pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-[#cfeeff]" />
+      <div className="bg-blob bg-blob-b pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-[#cfeeff]" />
 
-      <div className="pointer-events-none absolute right-16 top-1/3 h-24 w-24 rounded-full bg-[#dff2ff]" />
+      <div className="bg-blob bg-blob-c pointer-events-none absolute right-16 top-1/3 h-24 w-24 rounded-full bg-[#dff2ff]" />
 
-      <div className="pointer-events-none absolute bottom-20 left-16 h-20 w-20 rounded-full bg-[#dff2ff]" />
+      <div className="bg-blob bg-blob-d pointer-events-none absolute bottom-20 left-16 h-20 w-20 rounded-full bg-[#dff2ff]" />
 
       {/* Login Card */}
       <div className="relative z-10 w-full max-w-md">

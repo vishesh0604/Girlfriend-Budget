@@ -54,13 +54,13 @@ export default async function HomePage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#e5f6ff] px-4 py-8">
       {/* Decorative background shapes */}
-      <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#cfeeff]" />
+      <div className="bg-blob bg-blob-a pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#cfeeff]" />
 
-      <div className="pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-[#cfeeff]" />
+      <div className="bg-blob bg-blob-b pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-[#cfeeff]" />
 
-      <div className="pointer-events-none absolute right-16 top-1/3 h-24 w-24 rounded-full bg-[#dff2ff]" />
+      <div className="bg-blob bg-blob-c pointer-events-none absolute right-16 top-1/3 h-24 w-24 rounded-full bg-[#dff2ff]" />
 
-      <div className="pointer-events-none absolute bottom-20 left-16 h-20 w-20 rounded-full bg-[#dff2ff]" />
+      <div className="bg-blob bg-blob-d pointer-events-none absolute bottom-20 left-16 h-20 w-20 rounded-full bg-[#dff2ff]" />
 
       {/* Developer Logs */}
       <div className="absolute left-4 top-4 z-20">
