@@ -3,8 +3,43 @@
 Turning Budget Tracker from a private 2-person app into something anyone
 can sign up for. Also folds in the pending **timezone fix** (section 7).
 
-**Status:** not started. This is the reference — work through it in the
-order in section "Suggested order" at the bottom.
+**Status:** in progress. Work through it in the order in "Suggested
+order" at the bottom.
+
+### Progress
+
+- ✅ **Step 1 — Supabase config.** Email OTP on, sign-ups on, confirm-email
+  on, min password 8. Site URL + redirect URLs set for
+  `girlfriendbudget.vercel.app` and `localhost:3000`. (pushed)
+- ✅ **Step 2 — auth proxy.** `src/proxy.ts` (Next 16 renamed middleware →
+  proxy) wired to `src/lib/supabase/proxy.ts` `updateSession`; switched
+  to `getClaims()`. Sessions stay fresh, protected routes gated. (pushed,
+  commit `1cb2880`)
+- ✅ **Step 3 — `profiles` table.** Created in Supabase with RLS,
+  `handle_new_user()` trigger, `touch_updated_at()` trigger, backfilled
+  for the 2 existing users. (SQL run by hand — not in repo)
+- 🚧 **Step 4 — auth UI.** Code written and building on branch
+  **`multi-user-auth`** (commit `e178683`): login rewrite + `/auth/sign-up`
+  + `/auth/reset` + `AuthShell` + `fields.tsx`. **Not merged, not tested.**
+  Blocked on Step 9 (SMTP) because the 6-digit codes need an email-template
+  edit, and Supabase gates template editing behind custom SMTP.
+- ⏭️ **Step 9 — SMTP.** Became a prerequisite for Step 4. No custom domain
+  (`*.vercel.app` can't hold DNS records), so the plan is **Brevo with a
+  single verified sender** (Gmail address, click-to-verify, no DNS):
+  smtp-relay.brevo.com:587, login = Brevo account email, password = a
+  generated Brevo SMTP key → paste into Supabase → Auth → Emails → SMTP.
+  Then raise the email rate limit and add `{{ .Token }}` to the "Confirm
+  signup" and "Magic Link" templates. Caveat: no SPF/DKIM for gmail.com,
+  so some mail lands in spam until a real domain is bought (~$10/yr).
+
+### To resume
+
+1. Do the Brevo + Supabase SMTP setup (Step 9 block above).
+2. `git checkout multi-user-auth`, add `{{ .Token }}` to the two email
+   templates, then test the three flows locally (sign up with a
+   `+testN` Gmail alias, log in, forgot password).
+3. Merge `multi-user-auth` into `main`.
+4. Continue with Step 5 (settings page).
 
 ---
 
