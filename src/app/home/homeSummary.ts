@@ -4,6 +4,7 @@ import {
   type TransferRecord,
 } from "@/lib/supabase/budget/calculations";
 import { loadSpendingMoveTransferRecords } from "@/lib/supabase/spending/moves";
+import { nowInIST } from "@/lib/time";
 import { getSpendingSnapshot } from "../daily-spending/spendingSnapshot";
 
 type SupabaseClient = Awaited<
@@ -33,8 +34,8 @@ export type HomeSummary = {
 };
 
 function monthStartOf(date: Date) {
-  return `${date.getFullYear()}-${String(
-    date.getMonth() + 1
+  return `${date.getUTCFullYear()}-${String(
+    date.getUTCMonth() + 1
   ).padStart(2, "0")}-01`;
 }
 
@@ -47,7 +48,10 @@ export async function getHomeSummary(
   supabase: SupabaseClient,
   userId: string
 ): Promise<HomeSummary> {
-  const now = new Date();
+  const now = nowInIST();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  const dayOfMonth = now.getUTCDate();
   const monthStart = monthStartOf(now);
 
   const snapshot = await getSpendingSnapshot(
@@ -57,14 +61,12 @@ export async function getHomeSummary(
   );
 
   const daysInMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0
-  ).getDate();
+    Date.UTC(year, month + 1, 0)
+  ).getUTCDate();
 
   const daysLeft = Math.max(
     1,
-    daysInMonth - now.getDate() + 1
+    daysInMonth - dayOfMonth + 1
   );
 
   const poolRemaining = snapshot.remaining;
@@ -136,9 +138,7 @@ export async function getHomeSummary(
   ];
 
   const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
+    Date.UTC(year, month, dayOfMonth)
   );
 
   let best: {
@@ -183,9 +183,11 @@ export async function getHomeSummary(
     }
 
     const due = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      Math.min(dueDay, daysInMonth)
+      Date.UTC(
+        year,
+        month,
+        Math.min(dueDay, daysInMonth)
+      )
     );
 
     const diffDays = Math.round(

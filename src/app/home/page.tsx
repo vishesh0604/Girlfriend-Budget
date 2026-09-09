@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserId } from "@/lib/supabase/authUser";
+import { nowInIST } from "@/lib/time";
 import { getHomeSummary } from "./homeSummary";
 import LogoutButton from "./LogoutButton";
 import HelpButton from "./HelpButton";
@@ -38,15 +39,15 @@ export default async function HomePage() {
 
   // End-of-month nudge: from the 28th (26th in February), show what's
   // still unspent in this month's pool. Recomputed on every visit.
-  const now = new Date();
+  const now = nowInIST();
   const nudgeThreshold =
-    now.getMonth() === 1 ? 26 : 28;
+    now.getUTCMonth() === 1 ? 26 : 28;
   const poolNudge =
-    now.getDate() >= nudgeThreshold
+    now.getUTCDate() >= nudgeThreshold
       ? {
           remaining: summary.poolRemaining,
           monthName:
-            MONTH_NAMES[now.getMonth()],
+            MONTH_NAMES[now.getUTCMonth()],
         }
       : null;
 
