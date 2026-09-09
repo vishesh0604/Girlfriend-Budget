@@ -85,23 +85,6 @@ export default async function HomePage() {
               <HelpButton title="How Budget Tracker works">
                 <div>
                   <h3 className="font-semibold text-[#26354d]">
-                    At a glance
-                  </h3>
-
-                  <p className="mt-1">
-                    Each card shows a quick figure. Fixed Expenses:
-                    your most time-sensitive bill &mdash; the nearest
-                    one still to be paid, or &ldquo;All caught up&rdquo;
-                    when nothing is due. Daily Spending: what&apos;s
-                    left in this month&apos;s pool and a safe amount to
-                    spend per day for the rest of the month. Customize
-                    Budget: how many budget heads you have and their
-                    total monthly allocation. All update every visit.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-[#26354d]">
                     Fixed Expenses
                   </h3>
 
@@ -234,7 +217,7 @@ export default async function HomePage() {
                       </span>
                     </span>
                   ) : (
-                    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-xl bg-[#e7f6ec] px-2.5 py-1 text-[11px] font-semibold text-[#2f7d4f]">
+                    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-xl bg-[#e7f6ec] px-2.5 py-1 text-[11px] text-[#2f7d4f]">
                       <svg
                         width="12"
                         height="12"
@@ -249,8 +232,13 @@ export default async function HomePage() {
                       >
                         <path d="M20 6 9 17l-5-5" />
                       </svg>
-                      <span className="truncate">
-                        All caught up
+                      <span className="flex min-w-0 flex-col leading-tight">
+                        <span className="truncate font-semibold">
+                          Bills
+                        </span>
+                        <span className="truncate font-medium opacity-80">
+                          Nothing due
+                        </span>
                       </span>
                     </span>
                   ))}
