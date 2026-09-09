@@ -32,15 +32,21 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() verifies the JWT locally against the cached signing key
+  // (no round-trip to the Auth server), and still refreshes the session
+  // cookie when the access token has expired.
+  const { data } =
+    await supabase.auth.getClaims();
+
+  const isSignedIn = Boolean(
+    data?.claims?.sub
+  );
 
   const isPublicRoute =
     request.nextUrl.pathname === "/" ||
     request.nextUrl.pathname.startsWith("/auth");
 
-  if (!user && !isPublicRoute) {
+  if (!isSignedIn && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
 
