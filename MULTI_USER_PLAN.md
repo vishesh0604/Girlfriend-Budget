@@ -25,33 +25,49 @@ settings page).
 
 ## 1. Open sign-up
 
-### Supabase dashboard (no code)
-- [ ] Authentication → Providers → Email: enable **Email OTP** (6-digit code).
-- [ ] Authentication → URL Configuration: Site URL = Vercel domain; add redirect URLs.
-- [ ] Decide passwords vs passwordless. **Recommended: OTP-only** — no
-      passwords, no "forgot password" flow, and login + signup collapse
-      into one screen.
+**Decision (locked in):** password-based auth. Users sign up with email +
+password; a 6-digit OTP verifies the email on signup and is also the
+mechanism for password reset. No magic-link-only login.
 
-### Code
-- [ ] Rebuild `src/app/page.tsx` as a single **email → code** screen.
-      `signInWithOtp({ email, options: { shouldCreateUser: true } })`
-      then `verifyOtp({ email, token, type: "email" })`.
+### Supabase dashboard (no code)
+- [ ] Authentication → Sign In / Providers → Email:
+  - Email provider ON
+  - **Enable Email OTP** ON (used for the signup confirm code and the
+    password-reset code)
+  - **"Allow new users to sign up"** ON (currently OFF)
+  - **"Confirm email"** ON (signups must verify)
+  - Set a **minimum password length** (8+); enable the leaked-password
+    (HIBP) check if offered.
+- [ ] Authentication → URL Configuration: Site URL = Vercel domain; add
+      redirect URLs (`https://<domain>/**` and `http://localhost:3000/**`).
+- [ ] Authentication → Sessions: leave default.
+
+### Code — three flows
+- [ ] **Sign up** — email + password → `signUp({ email, password })` →
+      Supabase emails a 6-digit code → `verifyOtp({ email, token, type:
+      "signup" })` → verified + session.
+- [ ] **Log in** — email + password → `signInWithPassword` (roughly the
+      current `src/app/page.tsx`, minus the 2s fake delay).
+- [ ] **Forgot password** — email → `resetPasswordForEmail` (or
+      `signInWithOtp`) → 6-digit code → `verifyOtp({ ..., type:
+      "recovery" })` → `updateUser({ password })`.
 - [ ] New user (no budget heads yet) → route to `/setup` / first-run
       wizard, not an empty dashboard.
-- [ ] Handle error states: wrong code, expired code, typo'd email,
-      rate-limited.
+- [ ] Handle error states everywhere: wrong code, expired code, typo'd
+      email, weak password, email already registered, rate-limited.
 
 ---
 
-## 2. Email delivery (do not skip)
+## 2. Email delivery (do not skip before sharing)
 
-Supabase's built-in email sender is throttled to a few per hour —
-testing only. Real users need real SMTP.
+Supabase's built-in email sender is throttled to a few per hour — fine
+for building/testing with a handful of addresses, not for real users.
 
 - [ ] Authentication → Emails → SMTP Settings: connect Resend / Postmark
       / SES / Brevo (free tiers are enough).
-- [ ] "From" address on a domain you control (deliverability).
-- [ ] Brand the OTP email template so it isn't "Supabase".
+- [ ] "From" address on a domain you control (needs DNS records —
+      SPF/DKIM — so not a "sleepy" task).
+- [ ] Brand both templates: **Confirm signup** and **Reset password**.
 
 ---
 
@@ -171,11 +187,12 @@ hardcoded zone.
 
 ## Suggested order
 
-1. Supabase config — OTP + SMTP + URLs (section 1–2)
+1. Supabase config — enable OTP, sign-ups, confirm-email, URLs (section 1)
 2. `src/middleware.ts` — session refresh + auth gating (section 3)
 3. `profiles` table + trigger + backfill (section 5)
-4. Auth UI → single email/OTP flow (section 1)
+4. Auth UI — sign up / log in / forgot password (section 1)
 5. Settings page + gear icon (section 4)
 6. Timezone sweep via profile-aware `viewerNow()` (section 7)
 7. Currency sweep via `formatMoney()` (section 6)
 8. Onboarding + privacy note (section 8)
+9. Real SMTP + branded templates before sharing (section 2)
