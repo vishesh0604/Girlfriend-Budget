@@ -39,26 +39,14 @@ export default async function CustomizeBudgetPage() {
       <div className="mx-auto w-full max-w-4xl">
 
         <div className="mb-8">
-          <div className="flex items-center justify-between gap-3">
-            <HomeButton />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <HomeButton />
 
-            <ReorderHeadsButton
-              heads={budgetHeads.map((head) => ({
-                id: head.id,
-                name: head.name,
-              }))}
-            />
-          </div>
-
-          <div className="mt-4 flex items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
-              Customize Budget
-            </h1>
-
-            <HelpButton
-              title="Customize Budget"
-              align="inline"
-            >
+              <HelpButton
+                title="Customize Budget"
+                align="inline"
+              >
               <div>
                 <p className="font-semibold text-[#26354d]">
                   Manage Your Budget Heads
@@ -147,7 +135,19 @@ export default async function CustomizeBudgetPage() {
                 </p>
               </div>
             </HelpButton>
+            </div>
+
+            <ReorderHeadsButton
+              heads={budgetHeads.map((head) => ({
+                id: head.id,
+                name: head.name,
+              }))}
+            />
           </div>
+
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-[#26354d]">
+            Customize Budget
+          </h1>
 
           <p className="mt-2 text-sm text-[#647086]">
             Manage your budget heads and their default

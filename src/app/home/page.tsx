@@ -273,39 +273,55 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="relative mt-8 text-center">
             <LogoutButton />
 
             {poolNudge && (
-              <p className="mx-auto mt-4 max-w-md text-xs leading-5 text-[#647086]">
-                <span className="mr-1 font-semibold text-[#4f8fbd]">
-                  &#9432;
-                </span>
-                {poolNudge.remaining > 0 ? (
-                  <>
-                    ₹
-                    {Math.round(
-                      poolNudge.remaining
-                    ).toLocaleString("en-IN")}{" "}
-                    is still unspent in{" "}
-                    {poolNudge.monthName}
-                    &apos;s spending pool.{" "}
-                    <Link
-                      href="/daily-spending?move=1"
-                      className="underline underline-offset-2 hover:text-[#26354d]"
-                    >
-                      Move it before the month
-                      ends
-                    </Link>
-                    .
-                  </>
-                ) : (
-                  <>
-                    {poolNudge.monthName}&apos;s
-                    spending pool is fully used.
-                  </>
-                )}
-              </p>
+              <div className="absolute inset-x-0 top-full mt-4 flex justify-center">
+                <div className="inline-flex max-w-full items-center gap-2 overflow-x-auto whitespace-nowrap rounded-full border border-[#bfe3f5] bg-[#eaf6fe] px-4 py-2 text-xs text-[#3d5573] shadow-sm">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#4f8fbd"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="shrink-0"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+
+                  {poolNudge.remaining > 0 ? (
+                    <span>
+                      <span className="font-semibold text-[#26354d]">
+                        ₹
+                        {Math.round(
+                          poolNudge.remaining
+                        ).toLocaleString("en-IN")}
+                      </span>{" "}
+                      is still unspent in{" "}
+                      {poolNudge.monthName}
+                      &apos;s spending pool.{" "}
+                      <Link
+                        href="/daily-spending?move=1"
+                        className="font-medium text-[#3978a5] underline underline-offset-2 hover:text-[#26354d]"
+                      >
+                        Move it before the month ends
+                      </Link>
+                    </span>
+                  ) : (
+                    <span>
+                      {poolNudge.monthName}&apos;s
+                      spending pool is fully used.
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>
