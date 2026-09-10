@@ -2,8 +2,12 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserId } from "@/lib/supabase/authUser";
-import { getViewerNow } from "@/lib/supabase/viewer";
+import {
+  getViewerNow,
+  getViewerCurrency,
+} from "@/lib/supabase/viewer";
 import { monthStartOf } from "@/lib/time";
+import { formatMoney } from "@/lib/money";
 import { initializeMonthlyBudget } from "../dashboard/actions";
 import MonthNavigator from "../dashboard/MonthNavigator";
 import HelpButton from "../home/HelpButton";
@@ -25,12 +29,6 @@ type DailySpendingPageProps = {
     move?: string;
   }>;
 };
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  })}`;
-}
 
 function isValidMonthStart(
   value: string | undefined
@@ -67,12 +65,15 @@ export default async function DailySpendingPage({
 
   const params = await searchParams;
 
-  const viewerNow = await getViewerNow(
-    supabase,
-    userId
-  );
+  const [viewerNow, currency] =
+    await Promise.all([
+      getViewerNow(supabase, userId),
+      getViewerCurrency(supabase, userId),
+    ]);
   const currentMonthStart =
     monthStartOf(viewerNow);
+  const formatCurrency = (amount: number) =>
+    formatMoney(amount, currency);
 
   const monthStart = isValidMonthStart(
     params.month

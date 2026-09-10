@@ -189,16 +189,14 @@ export function validateTransfer(
   if (transferAmount <= 0) {
     return {
       valid: false,
-      error: "The amount to move must be greater than ₹0.",
+      error: "The amount to move must be greater than 0.",
     };
   }
 
   if (transferAmount > available) {
     return {
       valid: false,
-      error: `You can move a maximum of ₹${available.toLocaleString(
-        "en-IN"
-      )}.`,
+      error: `You can move a maximum of ${available.toLocaleString()}.`,
     };
   }
 

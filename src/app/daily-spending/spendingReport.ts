@@ -99,10 +99,40 @@ export function monthsInRange(
   return out;
 }
 
-export function rupees(amount: number) {
-  return `Rs ${Math.round(
-    amount
-  ).toLocaleString("en-IN")}`;
+/*
+ * Money for the PDF. react-pdf renders in Helvetica, which has no ₹
+ * glyph, so INR shows as "Rs". Other currencies use their narrow
+ * symbol, falling back to the ISO code.
+ */
+export function pdfMoney(
+  amount: number,
+  currency: string
+): string {
+  const n = Math.round(
+    Number.isFinite(amount) ? amount : 0
+  );
+  const locale =
+    currency === "INR" ? "en-IN" : "en-US";
+  const num = n.toLocaleString(locale);
+
+  if (currency === "INR") {
+    return `Rs ${num}`;
+  }
+
+  try {
+    const sym =
+      new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency,
+        currencyDisplay: "narrowSymbol",
+      })
+        .formatToParts(n)
+        .find((p) => p.type === "currency")
+        ?.value ?? `${currency} `;
+    return `${sym}${num}`;
+  } catch {
+    return `${currency} ${num}`;
+  }
 }
 
 export function reportDate(iso: string) {

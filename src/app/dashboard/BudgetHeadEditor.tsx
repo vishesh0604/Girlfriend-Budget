@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/CurrencyProvider";
+
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -156,6 +158,8 @@ export default function BudgetHeadEditor({
   transferOptions,
   recentTransfer,
 }: BudgetHeadEditorProps) {
+  const money = useMoney();
+
   const router = useRouter();
   const { runRefresh } = useRefresh();
 
@@ -633,10 +637,7 @@ export default function BudgetHeadEditor({
             </div>
           ) : (
             <p className="mt-1 font-medium">
-              ₹
-              {allocation.toLocaleString(
-                "en-IN"
-              )}
+              {money(allocation)}
             </p>
           )}
         </div>
@@ -680,10 +681,7 @@ export default function BudgetHeadEditor({
               />
 
               <p className="mt-1 text-xs text-zinc-500">
-                Maximum: ₹
-                {maximumPaidAmount.toLocaleString(
-                  "en-IN"
-                )}
+                Maximum: {money(maximumPaidAmount)}
               </p>
 
               <div className="mt-2 flex gap-2">
@@ -718,10 +716,7 @@ export default function BudgetHeadEditor({
             </div>
           ) : (
             <p className="mt-1 font-medium">
-              ₹
-              {paidAmount.toLocaleString(
-                "en-IN"
-              )}
+              {money(paidAmount)}
             </p>
           )}
         </div>
@@ -733,16 +728,10 @@ export default function BudgetHeadEditor({
           </p>
 
           <p className="mt-1 font-medium">
-            ₹
-            {remaining.toLocaleString(
-              "en-IN"
-            )}
+            {money(remaining)}
             {fromSpendingPool > 0 && (
               <span className="ml-1 text-[12px] font-medium text-emerald-600">
-                (+₹
-                {fromSpendingPool.toLocaleString(
-                  "en-IN"
-                )}{" "}
+                (+{money(fromSpendingPool)}{" "}
                 from{" "}
                 <Link
                   href="/daily-spending?move=1"
@@ -947,12 +936,9 @@ export default function BudgetHeadEditor({
                           {entry.amount < 0
                             ? "−"
                             : "+"}
-                          ₹
-                          {Math.abs(
+                          {money(Math.abs(
                             entry.amount
-                          ).toLocaleString(
-                            "en-IN"
-                          )}
+                          ))}
                         </span>
 
                         {entry.id && (
@@ -1040,10 +1026,7 @@ export default function BudgetHeadEditor({
                 </span>
 
                 <span className="font-medium">
-                  ₹
-                  {recentTransfer.amount.toLocaleString(
-                    "en-IN"
-                  )}
+                  {money(recentTransfer.amount)}
                 </span>
 
                 <span className="min-w-0 break-words text-zinc-500">
@@ -1168,15 +1151,12 @@ export default function BudgetHeadEditor({
                       event.target.value
                     )
                   }
-                  placeholder="₹0"
+                  placeholder="0"
                   className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
                 />
 
                 <p className="mt-1 text-xs text-zinc-500">
-                  Maximum: ₹
-                  {remaining.toLocaleString(
-                    "en-IN"
-                  )}
+                  Maximum: {money(remaining)}
                 </p>
               </div>
             </div>
@@ -1298,9 +1278,7 @@ export default function BudgetHeadEditor({
         title="Undo this fund move?"
         message={
           recentTransfer
-            ? `₹${recentTransfer.amount.toLocaleString(
-                "en-IN"
-              )} ${
+            ? `${money(recentTransfer.amount)} ${
                 recentTransfer.direction === "out"
                   ? `from ${name} to ${recentTransfer.otherHeadName}`
                   : `from ${recentTransfer.otherHeadName} to ${name}`
@@ -1320,9 +1298,7 @@ export default function BudgetHeadEditor({
         title="Clear this move from the card?"
         message={
           recentTransfer
-            ? `₹${recentTransfer.amount.toLocaleString(
-                "en-IN"
-              )} ${
+            ? `${money(recentTransfer.amount)} ${
                 recentTransfer.direction === "out"
                   ? `from ${name} to ${recentTransfer.otherHeadName}`
                   : `from ${recentTransfer.otherHeadName} to ${name}`
@@ -1346,11 +1322,9 @@ export default function BudgetHeadEditor({
                 historyDeleteTarget.amount < 0
                   ? "−"
                   : "+"
-              }₹${Math.abs(
+              }${money(Math.abs(
                 historyDeleteTarget.amount
-              ).toLocaleString(
-                "en-IN"
-              )}\n\nThis only removes the line from this list. Your Paid / Used amount and balance don't change.`
+              ))}\n\nThis only removes the line from this list. Your Paid / Used amount and balance don't change.`
             : ""
         }
         confirmLabel="Remove"

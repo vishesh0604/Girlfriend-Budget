@@ -2,7 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserId } from "@/lib/supabase/authUser";
-import { getViewerNow } from "@/lib/supabase/viewer";
+import {
+  getViewerNow,
+  getViewerCurrency,
+} from "@/lib/supabase/viewer";
+import { formatMoney } from "@/lib/money";
 import { getHomeSummary } from "./homeSummary";
 import LogoutButton from "./LogoutButton";
 import HelpButton from "./HelpButton";
@@ -33,10 +37,10 @@ export default async function HomePage() {
     redirect("/");
   }
 
-  const now = await getViewerNow(
-    supabase,
-    userId
-  );
+  const [now, currency] = await Promise.all([
+    getViewerNow(supabase, userId),
+    getViewerCurrency(supabase, userId),
+  ]);
 
   const summary = await getHomeSummary(
     supabase,
@@ -320,17 +324,15 @@ export default async function HomePage() {
                     </svg>
                     <span className="flex min-w-0 flex-col leading-tight">
                       <span className="truncate font-semibold">
-                        ₹
-                        {Math.round(
+                        {formatMoney(Math.round(
                           summary.poolRemaining
-                        ).toLocaleString("en-IN")}{" "}
+                        ), currency, { maxDecimals: 0 })}{" "}
                         left
                       </span>
                       <span className="truncate font-medium opacity-80">
-                        ₹
-                        {Math.round(
+                        {formatMoney(Math.round(
                           summary.perDayLeft
-                        ).toLocaleString("en-IN")}
+                        ), currency, { maxDecimals: 0 })}
                         /day
                       </span>
                     </span>
@@ -402,10 +404,9 @@ export default async function HomePage() {
                           : "heads"}
                       </span>
                       <span className="truncate font-medium opacity-80">
-                        ₹
-                        {Math.round(
+                        {formatMoney(Math.round(
                           summary.monthlyCommitted
-                        ).toLocaleString("en-IN")}
+                        ), currency, { maxDecimals: 0 })}
                         /mo committed
                       </span>
                     </span>
@@ -454,10 +455,9 @@ export default async function HomePage() {
                   {poolNudge.remaining > 0 ? (
                     <span>
                       <span className="font-semibold text-[#26354d]">
-                        ₹
-                        {Math.round(
+                        {formatMoney(Math.round(
                           poolNudge.remaining
-                        ).toLocaleString("en-IN")}
+                        ), currency, { maxDecimals: 0 })}
                       </span>{" "}
                       is still unspent in{" "}
                       {poolNudge.monthName}

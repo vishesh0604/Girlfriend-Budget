@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useRefresh } from "@/components/RefreshProvider";
 import { updateProfile } from "./actions";
-import { CURRENCIES } from "./currencies";
+import { CURRENCIES } from "@/lib/currencies";
 import SearchableSelect, {
   type SelectOption,
 } from "./SearchableSelect";

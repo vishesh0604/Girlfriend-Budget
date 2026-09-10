@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/CurrencyProvider";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -15,6 +17,8 @@ export default function SalaryEditor({
   monthlyBudgetId,
   salary,
 }: SalaryEditorProps) {
+  const money = useMoney();
+
   const router = useRouter();
   const { runRefresh } = useRefresh();
 
@@ -30,7 +34,7 @@ export default function SalaryEditor({
         </p>
 
         <p className="mt-2 text-2xl font-semibold">
-          ₹{salary.toLocaleString("en-IN")}
+          {money(salary)}
         </p>
 
         <button

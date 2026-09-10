@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/CurrencyProvider";
+
 import { useState } from "react";
 import { updateMonthlyHeadPaidAmount } from "./actions";
 
@@ -14,6 +16,8 @@ export default function PaidAmountEditor({
   paidAmount,
   allocatedAmount,
 }: PaidAmountEditorProps) {
+  const money = useMoney();
+
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(
     String(paidAmount)
@@ -42,7 +46,7 @@ export default function PaidAmountEditor({
         </div>
 
         <p className="mt-1 font-medium">
-          ₹{paidAmount.toLocaleString("en-IN")}
+          {money(paidAmount)}
         </p>
       </div>
     );
@@ -87,8 +91,7 @@ export default function PaidAmountEditor({
       />
 
       <p className="mt-1 text-xs text-zinc-500">
-        Maximum: ₹
-        {allocatedAmount.toLocaleString("en-IN")}
+        Maximum: {money(allocatedAmount)}
       </p>
 
       <div className="mt-3 flex gap-3">

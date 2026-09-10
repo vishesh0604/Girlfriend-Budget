@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/CurrencyProvider";
+
 import {
   useEffect,
   useMemo,
@@ -33,12 +35,6 @@ const REMAINING_COLOR = "#d7dde4";
 
 const RADIUS = 82;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN", {
-    maximumFractionDigits: 0,
-  })}`;
-}
 
 type Slice = {
   key: string;
@@ -177,6 +173,7 @@ function ChartModal({
   overspentBy,
   onClose,
 }: ChartModalProps) {
+  const formatCurrency = useMoney();
   const [shown, setShown] = useState(false);
 
   useEffect(() => {

@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/CurrencyProvider";
+
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -19,6 +21,8 @@ const HEAD_TYPES = [
 ];
 
 export default function SetupPage() {
+  const money = useMoney();
+
   const supabase = createClient();
 
   const [heads, setHeads] = useState<BudgetHead[]>([]);
@@ -275,13 +279,9 @@ export default function SetupPage() {
                   </div>
 
                   <p className="font-medium">
-                    ₹
-                    {Number(
+                    {money(Number(
                       head.default_monthly_allocation
-                    ).toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    ))}
                   </p>
                 </div>
               ))}

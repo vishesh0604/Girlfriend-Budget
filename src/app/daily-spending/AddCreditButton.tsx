@@ -170,7 +170,7 @@ export default function AddCreditButton({
                   onChange={(event) =>
                     setAmount(event.target.value)
                   }
-                  placeholder="₹0"
+                  placeholder="0"
                   className="mt-1 w-full rounded-lg border border-[#c9ddea] bg-[#f8fcff] px-3 py-2 text-sm outline-none focus:border-[#4f8fbd]"
                 />
               </div>

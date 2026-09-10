@@ -17,6 +17,8 @@ import {
   nowInZone,
   DEFAULT_TIME_ZONE,
 } from "@/lib/time";
+import { formatMoney } from "@/lib/money";
+import { isCurrencyCode } from "@/lib/currencies";
 
 import { initializeMonthlyBudget } from "./actions";
 import SalaryEditor from "./SalaryEditor";
@@ -37,11 +39,6 @@ type DashboardPageProps = {
   }>;
 };
 
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  })}`;
-}
 
 function isValidMonthStart(
   value: string | undefined
@@ -100,9 +97,17 @@ export default async function DashboardPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("head_sort, timezone")
+    .select("head_sort, timezone, currency")
     .eq("id", userId)
     .maybeSingle();
+
+  const currency = isCurrencyCode(
+    profile?.currency
+  )
+    ? profile.currency
+    : "INR";
+  const formatCurrency = (amount: number) =>
+    formatMoney(amount, currency);
 
   const savedSort = profile?.head_sort;
   const headSort: HeadSortMode =
@@ -1113,7 +1118,7 @@ export default async function DashboardPage({
           <p className="mt-1">
             The card shows each budget head that has a remaining
             balance, along with the amount remaining in that head.
-            Budget heads with ₹0 remaining are not shown.
+            Budget heads with nothing remaining are not shown.
           </p>
         </div>
 

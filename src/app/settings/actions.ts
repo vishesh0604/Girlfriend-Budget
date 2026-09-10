@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserId } from "@/lib/supabase/authUser";
-import { isCurrencyCode } from "./currencies";
+import { isCurrencyCode } from "@/lib/currencies";
 
 function isValidTimezone(
   value: unknown

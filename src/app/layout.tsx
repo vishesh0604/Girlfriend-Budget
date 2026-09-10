@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { RefreshProvider } from "@/components/RefreshProvider";
+import { CurrencyProvider } from "@/components/CurrencyProvider";
+import { createClient } from "@/lib/supabase/server";
+import { getAuthUserId } from "@/lib/supabase/authUser";
+import { getViewerCurrency } from "@/lib/supabase/viewer";
 
 // Self-hosted so local dev and production render identically. next/font/google
 // under Turbopack dev sometimes only emits the fallback @font-face into the
@@ -29,20 +33,28 @@ export const metadata: Metadata = {
   description: "Her Penny — your personal budget tracker",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const userId = await getAuthUserId(supabase);
+  const currency = userId
+    ? await getViewerCurrency(supabase, userId)
+    : "INR";
+
   return (
     <html
       lang="en"
       className={`${jakarta.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <RefreshProvider>
-          {children}
-        </RefreshProvider>
+        <CurrencyProvider currency={currency}>
+          <RefreshProvider>
+            {children}
+          </RefreshProvider>
+        </CurrencyProvider>
       </body>
     </html>
   );

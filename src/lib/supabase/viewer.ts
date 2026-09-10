@@ -4,6 +4,7 @@ import {
   nowInZone,
   monthStartOf,
 } from "@/lib/time";
+import { isCurrencyCode } from "@/lib/currencies";
 
 type SupabaseServerClient = Awaited<
   ReturnType<typeof createClient>
@@ -48,4 +49,20 @@ export async function getViewerMonthStart(
   return monthStartOf(
     await getViewerNow(supabase, userId)
   );
+}
+
+/** The viewer's ISO-4217 currency (profiles.currency), fallback "INR". */
+export async function getViewerCurrency(
+  supabase: SupabaseServerClient,
+  userId: string
+): Promise<string> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("currency")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return isCurrencyCode(data?.currency)
+    ? data.currency
+    : "INR";
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/CurrencyProvider";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -21,16 +23,12 @@ type PushRemainingButtonProps = {
   heads: PushHead[];
 };
 
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  })}`;
-}
-
 export default function PushRemainingButton({
   monthlyBudgetId,
   heads,
 }: PushRemainingButtonProps) {
+  const formatCurrency = useMoney();
+
   const router = useRouter();
   const { runRefresh } = useRefresh();
 

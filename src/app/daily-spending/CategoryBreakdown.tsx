@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/CurrencyProvider";
+
 import { useState } from "react";
 
 import { formatEntryDate } from "./dateHelpers";
@@ -36,18 +38,14 @@ type Selection =
   | { kind: "credit" }
   | null;
 
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  })}`;
-}
-
 export default function CategoryBreakdown({
   items,
   entries,
   credits,
   monthStart,
 }: CategoryBreakdownProps) {
+  const formatCurrency = useMoney();
+
   const [selection, setSelection] =
     useState<Selection>(null);
 

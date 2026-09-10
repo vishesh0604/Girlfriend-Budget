@@ -13,7 +13,7 @@ import {
 
 import {
   computeReportModel,
-  rupees,
+  pdfMoney,
   REPORT_TRACK_COLOR,
   DONUT_STROKE,
   type SpendingReport,
@@ -133,10 +133,14 @@ const styles = StyleSheet.create({
 
 export function SpendingReportPdf({
   report,
+  currency,
 }: {
   report: SpendingReport;
+  currency: string;
 }) {
   const model = computeReportModel(report);
+  const rupees = (amount: number) =>
+    pdfMoney(amount, currency);
 
   const meta = [
     `Credited ${rupees(model.totalCredited)}`,

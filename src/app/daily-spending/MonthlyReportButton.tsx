@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { useCurrency } from "@/components/CurrencyProvider";
 import { generateSpendingReport } from "./actions";
 import type { SpendingReport } from "./spendingReport";
 
@@ -22,6 +23,7 @@ function todayString() {
 export default function MonthlyReportButton({
   monthStart,
 }: MonthlyReportButtonProps) {
+  const currency = useCurrency();
   const [open, setOpen] = useState(false);
 
   const [fromDate, setFromDate] =
@@ -81,7 +83,10 @@ export default function MonthlyReportButton({
         ]);
 
       const blob = await pdf(
-        <SpendingReportPdf report={report} />
+        <SpendingReportPdf
+          report={report}
+          currency={currency}
+        />
       ).toBlob();
 
       const url = URL.createObjectURL(blob);

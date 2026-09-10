@@ -51,16 +51,27 @@ order" at the bottom.
   "to"). Client date code (`BudgetHeadEditor` due label) already used
   the browser clock — untouched.
 
+- ✅ **Step 7 — currency sweep.** `src/lib/currencies.ts` (moved from
+  settings/), `src/lib/money.ts` → `formatMoney(amount, currency)` +
+  `currencySymbol`, `src/components/CurrencyProvider.tsx` →
+  `useMoney()` / `useCurrency()` / `useCurrencySymbol()`.
+  `layout.tsx` fetches `profiles.currency` once and wraps everything in
+  `<CurrencyProvider>`. Client components use the hooks; server pages
+  (dashboard, daily-spending, home, customize-budget) fetch currency
+  and use `formatMoney`. PDF: `pdfMoney(amount, currency)` in
+  `spendingReport.ts` (INR → "Rs" for the Helvetica glyph gap, others →
+  narrow symbol / code), threaded via a `currency` prop on
+  `SpendingReportPdf`. Input placeholders `₹0` → `0`. Validation-error
+  amount strings had `₹` stripped (rare, pure `calculations.ts` can't
+  see currency). All money is now viewer-currency.
+
 ### To resume
 
-Next: **Step 7 — currency sweep** (`formatMoney(amount, currency)`
-helper, replace the ~40 hardcoded `₹` / `toLocaleString("en-IN")`
-sites; PDF glyph handling). Then Step 8 (onboarding + privacy note +
-the FK-cascade audit that unblocks Delete account).
-
-Deferred from Step 5: **Delete account** — needs the FK-cascade audit
-(does deleting `auth.users` cascade to `budget_heads`,
-`monthly_budgets`, `spending_*`?). Bundled into Step 8.
+Next: **Step 8 — onboarding + privacy note + the FK-cascade audit**
+that unblocks Delete account (does deleting `auth.users` cascade to
+`budget_heads` / `monthly_budgets` / `spending_*`? add
+`on delete cascade` where missing). Then wire the Delete-account
+button in the Settings popup.
 
 ---
 

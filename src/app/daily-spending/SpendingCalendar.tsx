@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/CurrencyProvider";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -46,12 +48,6 @@ const WEEKDAYS = [
   "S",
 ];
 
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN", {
-    maximumFractionDigits: 0,
-  })}`;
-}
-
 export default function SpendingCalendar({
   entries,
   categories,
@@ -59,6 +55,8 @@ export default function SpendingCalendar({
   daysInMonth,
   todayDay,
 }: SpendingCalendarProps) {
+  const formatCurrency = useMoney();
+
   const router = useRouter();
 
   const { runRefresh } = useRefresh();
@@ -357,7 +355,7 @@ export default function SpendingCalendar({
                   onChange={(event) =>
                     setAmount(event.target.value)
                   }
-                  placeholder="₹0"
+                  placeholder="0"
                   className="w-full rounded-lg border border-[#c9ddea] bg-[#f8fcff] px-3 py-2 text-sm outline-none focus:border-[#4f8fbd]"
                 />
 

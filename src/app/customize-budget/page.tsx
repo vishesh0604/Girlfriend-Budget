@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserId } from "@/lib/supabase/authUser";
+import { getViewerCurrency } from "@/lib/supabase/viewer";
+import { formatMoney } from "@/lib/money";
 import BudgetHeadForm from "./BudgetHeadForm";
 import ReorderHeadsButton from "./ReorderHeadsButton";
 import HelpButton from "../home/HelpButton";
@@ -33,6 +35,11 @@ export default async function CustomizeBudgetPage() {
   if (error) {
     throw new Error(error.message);
   }
+
+  const currency = await getViewerCurrency(
+    supabase,
+    userId
+  );
 
   return (
     <main className="min-h-screen bg-[#e5f6ff] px-4 py-8">
@@ -198,10 +205,12 @@ export default async function CustomizeBudgetPage() {
                     </p>
 
                     <p className="mt-1 text-xl font-bold text-[#26354d]">
-                      ₹
-                      {Number(
-                        head.default_monthly_allocation
-                      ).toLocaleString("en-IN")}
+                      {formatMoney(
+                        Number(
+                          head.default_monthly_allocation
+                        ),
+                        currency
+                      )}
                     </p>
 
                     {head.due_day && (

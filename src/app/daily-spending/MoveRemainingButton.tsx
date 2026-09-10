@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/CurrencyProvider";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -33,12 +35,6 @@ type MoveRemainingButtonProps = {
 
 const NEXT_MONTH_VALUE = "next_month";
 
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  })}`;
-}
-
 export default function MoveRemainingButton({
   monthStart,
   remaining,
@@ -46,6 +42,8 @@ export default function MoveRemainingButton({
   moves,
   autoOpen = false,
 }: MoveRemainingButtonProps) {
+  const formatCurrency = useMoney();
+
   const router = useRouter();
 
   const { runRefresh } = useRefresh();
@@ -247,7 +245,7 @@ export default function MoveRemainingButton({
                   onChange={(event) =>
                     setAmount(event.target.value)
                   }
-                  placeholder="₹0"
+                  placeholder="0"
                   className="mt-1 w-full rounded-lg border border-[#c9ddea] bg-[#f8fcff] px-3 py-2 text-sm outline-none focus:border-[#4f8fbd]"
                 />
               </div>

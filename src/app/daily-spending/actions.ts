@@ -420,7 +420,7 @@ async function validateSpendingEntryInput(
 
   if (amount <= 0) {
     return {
-      error: "Amount must be greater than ₹0.",
+      error: "Amount must be greater than 0.",
     };
   }
 
@@ -646,7 +646,7 @@ export async function createSpendingMove(
   if (amount <= 0) {
     return {
       success: false,
-      error: "Amount must be greater than ₹0.",
+      error: "Amount must be greater than 0.",
     };
   }
 
@@ -733,9 +733,7 @@ export async function createSpendingMove(
   if (amount > snapshot.remaining) {
     return {
       success: false,
-      error: `You can move at most ₹${snapshot.remaining.toLocaleString(
-        "en-IN"
-      )}.`,
+      error: `You can move at most ${snapshot.remaining.toLocaleString()}.`,
     };
   }
 
@@ -821,7 +819,7 @@ function validateSpendingCreditInput(
 
   if (amount <= 0) {
     return {
-      error: "Amount must be greater than ₹0.",
+      error: "Amount must be greater than 0.",
     };
   }
 

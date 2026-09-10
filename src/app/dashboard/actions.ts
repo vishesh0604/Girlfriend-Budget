@@ -636,9 +636,7 @@ export async function updateMonthlyHeadPaidAmount(
     return {
       success: false,
       error:
-        `Paid / Used amount cannot exceed the total available amount of ₹${maximumPaidAmount.toLocaleString(
-          "en-IN"
-        )}.`,
+        `Paid / Used amount cannot exceed the total available amount of ${maximumPaidAmount.toLocaleString()}.`,
     };
   }
 
@@ -784,7 +782,7 @@ export async function createTransfer(
     return {
       success: false,
       error:
-        "The amount to move must be greater than ₹0.",
+        "The amount to move must be greater than 0.",
     };
   }
 
@@ -900,9 +898,7 @@ export async function createTransfer(
     return {
       success: false,
       error:
-        `You can move a maximum of ₹${availableBalance.toLocaleString(
-          "en-IN"
-        )}.`,
+        `You can move a maximum of ${availableBalance.toLocaleString()}.`,
     };
   }
 
