@@ -18,28 +18,25 @@ order" at the bottom.
 - ✅ **Step 3 — `profiles` table.** Created in Supabase with RLS,
   `handle_new_user()` trigger, `touch_updated_at()` trigger, backfilled
   for the 2 existing users. (SQL run by hand — not in repo)
-- 🚧 **Step 4 — auth UI.** Code written and building on branch
-  **`multi-user-auth`** (commit `e178683`): login rewrite + `/auth/sign-up`
-  + `/auth/reset` + `AuthShell` + `fields.tsx`. **Not merged, not tested.**
-  Blocked on Step 9 (SMTP) because the 6-digit codes need an email-template
-  edit, and Supabase gates template editing behind custom SMTP.
-- ⏭️ **Step 9 — SMTP.** Became a prerequisite for Step 4. No custom domain
-  (`*.vercel.app` can't hold DNS records), so the plan is **Brevo with a
-  single verified sender** (Gmail address, click-to-verify, no DNS):
-  smtp-relay.brevo.com:587, login = Brevo account email, password = a
-  generated Brevo SMTP key → paste into Supabase → Auth → Emails → SMTP.
-  Then raise the email rate limit and add `{{ .Token }}` to the "Confirm
-  signup" and "Magic Link" templates. Caveat: no SPF/DKIM for gmail.com,
-  so some mail lands in spam until a real domain is bought (~$10/yr).
+- ✅ **Step 4 — auth UI.** Merged to `main` (commit `b79bc19`). Rewritten
+  login (`src/app/page.tsx`), `/auth/sign-up`, `/auth/reset`,
+  `src/app/auth/AuthShell.tsx` + `fields.tsx`. All three flows tested:
+  sign up → 6-digit code → verified; log in; forgot password → code →
+  new password. Existing accounts unaffected.
+- ✅ **Step 9 — SMTP (done early, was blocking Step 4).** Brevo free plan,
+  single verified sender (Gmail, click-to-verify, no DNS). Custom SMTP
+  configured in Supabase (`smtp-relay.brevo.com:587`, login is the
+  `...@smtp-brevo.com` string, password is the Brevo SMTP key). Email OTP
+  length set to 6. Email rate limit raised. Branded templates for
+  "Confirm signup" + "Magic Link" pasted in — source of truth in
+  `emails/`. Caveat still stands: Brevo sends from a `@*.brevosend.com`
+  address and there's no SPF/DKIM for gmail.com, so some mail may land in
+  spam until a real domain is bought (~$10/yr) and domain-authenticated.
 
 ### To resume
 
-1. Do the Brevo + Supabase SMTP setup (Step 9 block above).
-2. `git checkout multi-user-auth`, add `{{ .Token }}` to the two email
-   templates, then test the three flows locally (sign up with a
-   `+testN` Gmail alias, log in, forgot password).
-3. Merge `multi-user-auth` into `main`.
-4. Continue with Step 5 (settings page).
+Next: **Step 5 — settings page + gear icon.** Then Step 6 (timezone
+sweep), Step 7 (currency), Step 8 (onboarding + privacy note).
 
 ---
 
