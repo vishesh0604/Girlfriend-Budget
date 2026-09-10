@@ -49,11 +49,12 @@ export default function SortHeadsButton({
   }
 
   return (
-    <div className="relative top-[17px] shrink-0">
+    <div className="relative top-[20px] shrink-0">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-sm transition hover:bg-zinc-50"
+        aria-label={`Sort: ${HEAD_SORT_SHORT[shown]}`}
+        className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-2 py-1.5 text-xs font-medium text-zinc-600 shadow-sm transition hover:bg-zinc-50 sm:px-3"
       >
         <svg
           width="13"
@@ -71,7 +72,7 @@ export default function SortHeadsButton({
           <path d="m21 16-4 4-4-4" />
           <path d="M17 20V4" />
         </svg>
-        <span className="whitespace-nowrap">
+        <span className="hidden whitespace-nowrap sm:inline">
           Sort: {HEAD_SORT_SHORT[shown]}
         </span>
         <svg
@@ -84,7 +85,7 @@ export default function SortHeadsButton({
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
-          className={`transition ${
+          className={`hidden transition sm:block ${
             open ? "rotate-180" : ""
           }`}
         >
