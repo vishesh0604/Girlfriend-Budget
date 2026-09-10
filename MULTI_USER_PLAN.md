@@ -65,13 +65,35 @@ order" at the bottom.
   amount strings had `₹` stripped (rare, pure `calculations.ts` can't
   see currency). All money is now viewer-currency.
 
-### To resume
+- ✅ **Step 8 — onboarding, privacy note, delete account.**
+  - Onboarding: home page shows a "Welcome — add budget heads, then set
+    your salary" banner while `summary.headCount === 0`.
+  - Privacy note: one line in `AuthShell` under every auth screen.
+  - Delete account: `public.delete_own_account()` (security-definer,
+    deletes user-owned rows in RESTRICT-safe order then `auth.users`),
+    `deleteAccount()` action (`rpc` + `signOut`), and a "Danger zone"
+    in the Settings popup (type DELETE → "Delete forever" →
+    `window.location = "/"`). The two RESTRICT FKs
+    (`spending_entries.category_id`, `monthly_budget_heads.budget_head_id`)
+    are handled by delete order, not a schema change.
 
-Next: **Step 8 — onboarding + privacy note + the FK-cascade audit**
-that unblocks Delete account (does deleting `auth.users` cascade to
-`budget_heads` / `monthly_budgets` / `spending_*`? add
-`on delete cascade` where missing). Then wire the Delete-account
-button in the Settings popup.
+---
+
+## ✅ Plan complete
+
+All 8 steps + SMTP done and on `main`. Her Penny is a sign-up-and-use
+product: open registration (email + password + OTP), sticky sessions,
+per-user data isolation, a settings popup (timezone + currency, both
+respected app-wide), branded email, onboarding, and account deletion.
+
+Remaining nice-to-haves (not blocking):
+- Buy a domain (~$10/yr) → domain-authenticate the sender in Brevo for
+  inbox deliverability; then also move the app off `*.vercel.app`.
+- `calculations.ts` validation-error strings show a bare number instead
+  of a currency symbol (pure module, no currency context).
+- Auth pages (`/`, `/auth/*`) went from static to dynamic because
+  `layout.tsx` now reads cookies for currency — negligible, but could
+  be optimised.
 
 ---
 

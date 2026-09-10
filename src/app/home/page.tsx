@@ -156,6 +156,33 @@ export default async function HomePage() {
             </div>
           </div>
 
+          {summary.headCount === 0 && (
+            <div className="mb-6 rounded-3xl border border-[#bfe3f5] bg-[#eaf6fe] p-6 text-center">
+              <p className="text-base font-semibold text-[#26354d]">
+                Welcome to Her Penny 👋
+              </p>
+              <p className="mx-auto mt-1.5 max-w-md text-sm leading-6 text-[#3d5573]">
+                Two quick steps to get started:{" "}
+                <Link
+                  href="/customize-budget"
+                  prefetch
+                  className="font-semibold text-[#3978a5] underline underline-offset-2 hover:text-[#26354d]"
+                >
+                  add your budget heads
+                </Link>{" "}
+                (rent, bills, savings…), then open{" "}
+                <Link
+                  href="/dashboard"
+                  prefetch
+                  className="font-semibold text-[#3978a5] underline underline-offset-2 hover:text-[#26354d]"
+                >
+                  Fixed Expenses
+                </Link>{" "}
+                to set your monthly salary.
+              </p>
+            </div>
+          )}
+
           <div className="grid gap-5 md:grid-cols-3">
             <Link
               href="/dashboard"

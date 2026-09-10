@@ -22,6 +22,34 @@ function isValidTimezone(
   }
 }
 
+export async function deleteAccount() {
+  const supabase = await createClient();
+
+  const userId = await getAuthUserId(supabase);
+
+  if (!userId) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  const { error } = await supabase.rpc(
+    "delete_own_account"
+  );
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  await supabase.auth.signOut();
+
+  return { success: true };
+}
+
 export async function getMyProfile() {
   const supabase = await createClient();
 

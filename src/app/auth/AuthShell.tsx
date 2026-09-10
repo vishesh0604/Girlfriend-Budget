@@ -70,6 +70,11 @@ export default function AuthShell({
             {footer}
           </p>
         )}
+
+        <p className="mt-6 text-center text-xs leading-5 text-[#8a94a6]">
+          Your budget data is private to your
+          account and stored securely on Supabase.
+        </p>
       </div>
     </main>
   );

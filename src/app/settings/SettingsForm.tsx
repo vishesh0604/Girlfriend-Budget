@@ -4,7 +4,10 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useRefresh } from "@/components/RefreshProvider";
-import { updateProfile } from "./actions";
+import {
+  updateProfile,
+  deleteAccount,
+} from "./actions";
 import { CURRENCIES } from "@/lib/currencies";
 import SearchableSelect, {
   type SelectOption,
@@ -69,6 +72,33 @@ export default function SettingsForm({
   >(null);
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
+
+  const [deleteMode, setDeleteMode] =
+    useState(false);
+  const [deleteConfirm, setDeleteConfirm] =
+    useState("");
+  const [deleting, setDeleting] =
+    useState(false);
+  const [deleteError, setDeleteError] =
+    useState("");
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError("");
+
+    const result = await deleteAccount();
+
+    if (!result.success) {
+      setDeleting(false);
+      setDeleteError(
+        result.error ??
+          "Couldn't delete the account."
+      );
+      return;
+    }
+
+    window.location.href = "/";
+  }
 
   const zoneOptions: SelectOption[] =
     useMemo(() => {
@@ -209,6 +239,73 @@ export default function SettingsForm({
           <span className="text-red-600">
             {error}
           </span>
+        )}
+      </div>
+
+      <div className="border-t border-[#f3b9cd] pt-5">
+        {!deleteMode ? (
+          <button
+            type="button"
+            onClick={() => setDeleteMode(true)}
+            className="text-sm font-medium text-[#a94444] underline underline-offset-2 hover:text-[#7a2f2f]"
+          >
+            Delete account
+          </button>
+        ) : (
+          <div className="rounded-xl border border-[#f0c9c9] bg-[#fdf3f3] p-4">
+            <p className="text-sm font-semibold text-[#7a2f2f]">
+              Delete your account?
+            </p>
+            <p className="mt-1 text-xs leading-5 text-[#a05a5a]">
+              This permanently removes your account
+              and every budget, expense and setting.
+              It can&apos;t be undone.
+            </p>
+
+            <input
+              value={deleteConfirm}
+              onChange={(e) =>
+                setDeleteConfirm(e.target.value)
+              }
+              placeholder="Type DELETE to confirm"
+              className="mt-3 w-full rounded-lg border border-[#e0c3c3] bg-white px-3 py-2 text-sm text-[#26354d] outline-none focus:border-[#a94444]"
+            />
+
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={
+                  deleteConfirm !== "DELETE" ||
+                  deleting
+                }
+                className="rounded-lg bg-[#a94444] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#8f3838] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleting
+                  ? "Deleting…"
+                  : "Delete forever"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteMode(false);
+                  setDeleteConfirm("");
+                  setDeleteError("");
+                }}
+                disabled={deleting}
+                className="rounded-lg border border-[#e0c3c3] px-3 py-1.5 text-xs font-medium text-[#7a2f2f] hover:bg-[#f7e9e9] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {deleteError && (
+              <p className="mt-2 text-xs text-red-600">
+                {deleteError}
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>
