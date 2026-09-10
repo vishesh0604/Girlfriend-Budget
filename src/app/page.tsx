@@ -81,17 +81,6 @@ export default function LoginPage() {
     <AuthShell
       title="Budget Tracker"
       subtitle="Sign in to manage your monthly budget."
-      footer={
-        <>
-          New here?{" "}
-          <Link
-            href="/auth/sign-up"
-            className="font-semibold text-[#3978a5] underline underline-offset-2 hover:text-[#26354d]"
-          >
-            Create an account
-          </Link>
-        </>
-      }
     >
       <form
         onSubmit={handleLogin}
@@ -124,10 +113,20 @@ export default function LoginPage() {
             placeholder="••••••••"
           />
 
-          <div className="mt-2 text-right">
+          <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+            <span className="text-[#647086]">
+              New here?{" "}
+              <Link
+                href="/auth/sign-up"
+                className="font-semibold text-[#3978a5] underline underline-offset-2 hover:text-[#26354d]"
+              >
+                Create an account
+              </Link>
+            </span>
+
             <Link
               href="/auth/reset"
-              className="text-xs font-medium text-[#647086] underline underline-offset-2 hover:text-[#26354d]"
+              className="shrink-0 font-medium text-[#647086] underline underline-offset-2 hover:text-[#26354d]"
             >
               Forgot password?
             </Link>
