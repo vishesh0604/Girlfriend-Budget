@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserId } from "@/lib/supabase/authUser";
-import { nowInIST } from "@/lib/time";
+import { getViewerNow } from "@/lib/supabase/viewer";
 import { getHomeSummary } from "./homeSummary";
 import LogoutButton from "./LogoutButton";
 import HelpButton from "./HelpButton";
@@ -33,14 +33,19 @@ export default async function HomePage() {
     redirect("/");
   }
 
-  const summary = await getHomeSummary(
+  const now = await getViewerNow(
     supabase,
     userId
   );
 
+  const summary = await getHomeSummary(
+    supabase,
+    userId,
+    now
+  );
+
   // End-of-month nudge: from the 28th (26th in February), show what's
   // still unspent in this month's pool. Recomputed on every visit.
-  const now = nowInIST();
   const nudgeThreshold =
     now.getUTCMonth() === 1 ? 26 : 28;
   const poolNudge =

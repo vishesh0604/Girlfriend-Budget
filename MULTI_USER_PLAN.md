@@ -33,10 +33,34 @@ order" at the bottom.
   address and there's no SPF/DKIM for gmail.com, so some mail may land in
   spam until a real domain is bought (~$10/yr) and domain-authenticated.
 
+- ✅ **Step 5 — settings.** A **popup** (not a page), opened from the gear
+  on the home page. `settings/SettingsButton.tsx` (modal),
+  `SettingsForm.tsx`, `SearchableSelect.tsx` (custom search+scroll
+  dropdown), `currencies.ts` (15), `actions.ts`
+  (`getMyProfile` / `updateProfile`). Saves to `profiles.timezone` /
+  `.currency` on select. No migration (columns exist from Step 3).
+  Commit `487b2bf`.
+- ✅ **Step 6 — timezone sweep.** `src/lib/time.ts` → `nowInZone(tz)` +
+  `monthStartOf`; `src/lib/supabase/viewer.ts` → `getViewerNow` /
+  `getViewerMonthStart` (read `profiles.timezone`, fallback
+  `Asia/Kolkata`). Wired through: `home/page.tsx` + `homeSummary.ts`
+  (now takes `now`), `dashboard/page.tsx` (`currentMonthStart` +
+  `daysUntilDue`), `daily-spending/page.tsx` (`currentMonthStart` +
+  `todayDay`), `dashboard/actions.ts` (all 7 `currentMonthStart`
+  gates), `daily-spending/actions.ts` (`getSpendingReport` default
+  "to"). Client date code (`BudgetHeadEditor` due label) already used
+  the browser clock — untouched.
+
 ### To resume
 
-Next: **Step 5 — settings page + gear icon.** Then Step 6 (timezone
-sweep), Step 7 (currency), Step 8 (onboarding + privacy note).
+Next: **Step 7 — currency sweep** (`formatMoney(amount, currency)`
+helper, replace the ~40 hardcoded `₹` / `toLocaleString("en-IN")`
+sites; PDF glyph handling). Then Step 8 (onboarding + privacy note +
+the FK-cascade audit that unblocks Delete account).
+
+Deferred from Step 5: **Delete account** — needs the FK-cascade audit
+(does deleting `auth.users` cascade to `budget_heads`,
+`monthly_budgets`, `spending_*`?). Bundled into Step 8.
 
 ---
 

@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserId } from "@/lib/supabase/authUser";
+import { getViewerNow } from "@/lib/supabase/viewer";
+import { monthStartOf } from "@/lib/time";
 import { initializeMonthlyBudget } from "../dashboard/actions";
 import MonthNavigator from "../dashboard/MonthNavigator";
 import HelpButton from "../home/HelpButton";
@@ -28,14 +30,6 @@ function formatCurrency(amount: number) {
   return `₹${amount.toLocaleString("en-IN", {
     maximumFractionDigits: 2,
   })}`;
-}
-
-function getCurrentMonthStart() {
-  const now = new Date();
-
-  return `${now.getFullYear()}-${String(
-    now.getMonth() + 1
-  ).padStart(2, "0")}-01`;
 }
 
 function isValidMonthStart(
@@ -73,8 +67,12 @@ export default async function DailySpendingPage({
 
   const params = await searchParams;
 
+  const viewerNow = await getViewerNow(
+    supabase,
+    userId
+  );
   const currentMonthStart =
-    getCurrentMonthStart();
+    monthStartOf(viewerNow);
 
   const monthStart = isValidMonthStart(
     params.month
@@ -411,8 +409,6 @@ export default async function DailySpendingPage({
     .split("-")
     .map(Number);
 
-  const now = new Date();
-
   const daysInMonth = new Date(
     Number(monthStart.slice(0, 4)),
     month,
@@ -461,7 +457,7 @@ export default async function DailySpendingPage({
   // for the current month, otherwise the 1st.
   const todayDay =
     monthStart === currentMonthStart
-      ? now.getDate()
+      ? viewerNow.getUTCDate()
       : null;
 
   const defaultDay = todayDay ?? 1;

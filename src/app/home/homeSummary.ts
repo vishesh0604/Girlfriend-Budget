@@ -4,7 +4,7 @@ import {
   type TransferRecord,
 } from "@/lib/supabase/budget/calculations";
 import { loadSpendingMoveTransferRecords } from "@/lib/supabase/spending/moves";
-import { nowInIST } from "@/lib/time";
+import { monthStartOf } from "@/lib/time";
 import { getSpendingSnapshot } from "../daily-spending/spendingSnapshot";
 
 type SupabaseClient = Awaited<
@@ -33,22 +33,17 @@ export type HomeSummary = {
   monthlyCommitted: number;
 };
 
-function monthStartOf(date: Date) {
-  return `${date.getUTCFullYear()}-${String(
-    date.getUTCMonth() + 1
-  ).padStart(2, "0")}-01`;
-}
-
 /*
  * The live numbers shown on the home page cards: this month's spending
  * pool (left + per-day) and the most time-sensitive fixed bill still due.
  * "Settled" and the due-day maths mirror the Fixed Expenses card exactly.
+ * `now` is the viewer's wall-clock time (see getViewerNow).
  */
 export async function getHomeSummary(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  now: Date
 ): Promise<HomeSummary> {
-  const now = nowInIST();
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth();
   const dayOfMonth = now.getUTCDate();

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getSpendingSnapshot } from "./spendingSnapshot";
 import { getAuthUserId } from "@/lib/supabase/authUser";
+import { getViewerNow } from "@/lib/supabase/viewer";
 import { isValidCategoryColor } from "./categoryColors";
 import {
   monthsInRange,
@@ -1013,10 +1014,13 @@ export async function generateSpendingReport(
     };
   }
 
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${pad2(
-    today.getMonth() + 1
-  )}-${pad2(today.getDate())}`;
+  const today = await getViewerNow(
+    supabase,
+    userId
+  );
+  const todayStr = `${today.getUTCFullYear()}-${pad2(
+    today.getUTCMonth() + 1
+  )}-${pad2(today.getUTCDate())}`;
 
   const from = fromDate || "2000-01-01";
   const to = toDate || todayStr;

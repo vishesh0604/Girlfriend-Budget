@@ -9,6 +9,7 @@ import {
 } from "@/lib/supabase/budget/calculations";
 import { loadSpendingMoveTransferRecords } from "@/lib/supabase/spending/moves";
 import { getAuthUserId } from "@/lib/supabase/authUser";
+import { getViewerMonthStart } from "@/lib/supabase/viewer";
 import { isHeadSortMode } from "./headSort";
 
 export async function initializeMonthlyBudget(
@@ -51,12 +52,11 @@ export async function initializeMonthlyBudget(
     *
     * Historical and current months are left untouched.
     */
-    const now = new Date();
-
     const currentMonthStart =
-      `${now.getFullYear()}-${String(
-        now.getMonth() + 1
-      ).padStart(2, "0")}-01`;
+      await getViewerMonthStart(
+        supabase,
+        user.id
+      );
 
     if (monthStart > currentMonthStart) {
       const {
@@ -143,9 +143,6 @@ export async function initializeMonthlyBudget(
       budgetId: existingBudget.id,
     };
   }
-  const now = new Date();
-
-  
   const {
     data: budgetHeads,
     error: budgetHeadsError,
@@ -179,9 +176,10 @@ export async function initializeMonthlyBudget(
    * cannot pull a later salary backwards into the past.
    */
   const currentMonthStart =
-    `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}-01`;
+    await getViewerMonthStart(
+      supabase,
+      user.id
+    );
 
   let initialSalary = 0;
 
@@ -335,12 +333,11 @@ export async function updateSalary(
     };
   }
 
-  const now = new Date();
-
   const currentMonthStart =
-    `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}-01`;
+    await getViewerMonthStart(
+      supabase,
+      user.id
+    );
 
   const timestamp = new Date().toISOString();
 
@@ -1976,12 +1973,11 @@ export async function createBudgetHead(
     };
   }
 
-  const now = new Date();
-
   const currentMonthStart =
-    `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}-01`;
+    await getViewerMonthStart(
+      supabase,
+      user.id
+    );
 
   const {
     data: currentBudget,
@@ -2145,11 +2141,11 @@ export async function updateBudgetHead(
     };
   }
 
-  const now = new Date();
   const currentMonthStart =
-    `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}-01`;
+    await getViewerMonthStart(
+      supabase,
+      user.id
+    );
 
   const {
     data: currentAndFutureBudgets,
@@ -2270,12 +2266,11 @@ export async function deactivateBudgetHead(
    * Remove this head from the CURRENT month's dashboard
    * without touching historical months.
    */
-  const now = new Date();
-
   const currentMonthStart =
-    `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}-01`;
+    await getViewerMonthStart(
+      supabase,
+      user.id
+    );
 
   const {
     data: currentBudget,
@@ -2420,12 +2415,11 @@ export async function activateBudgetHead(
   /*
    * Put the head back into the CURRENT month's dashboard.
    */
-  const now = new Date();
-
   const currentMonthStart =
-    `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}-01`;
+    await getViewerMonthStart(
+      supabase,
+      user.id
+    );
 
   const {
     data: currentBudget,

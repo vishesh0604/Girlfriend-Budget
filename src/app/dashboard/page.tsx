@@ -12,7 +12,11 @@ import {
 } from "@/lib/supabase/budget/calculations";
 
 import { loadSpendingMoveTransferRecords } from "@/lib/supabase/spending/moves";
-import { nowInIST } from "@/lib/time";
+import {
+  monthStartOf,
+  nowInZone,
+  DEFAULT_TIME_ZONE,
+} from "@/lib/time";
 
 import { initializeMonthlyBudget } from "./actions";
 import SalaryEditor from "./SalaryEditor";
@@ -39,14 +43,6 @@ function formatCurrency(amount: number) {
   })}`;
 }
 
-function getCurrentMonthStart() {
-  const now = new Date();
-
-  return `${now.getFullYear()}-${String(
-    now.getMonth() + 1
-  ).padStart(2, "0")}-01`;
-}
-
 function isValidMonthStart(
   value: string | undefined
 ) {
@@ -58,24 +54,20 @@ function isValidMonthStart(
 }
 
 /*
- * Days from today (IST) until a head's due day this month. Only
- * meaningful for the current month; anything else sorts to the end.
- * Negative = overdue.
+ * Days from today (viewer's zone) until a head's due day this month.
+ * Only meaningful for the current month; anything else sorts to the
+ * end. Negative = overdue.
  */
 function daysUntilDue(
   monthStart: string,
-  dueDay: number
+  dueDay: number,
+  now: Date
 ): number {
-  const now = nowInIST();
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth();
   const day = now.getUTCDate();
 
-  const currentMonthStart = `${year}-${String(
-    month + 1
-  ).padStart(2, "0")}-01`;
-
-  if (monthStart !== currentMonthStart) {
+  if (monthStart !== monthStartOf(now)) {
     return Number.POSITIVE_INFINITY;
   }
 
@@ -108,7 +100,7 @@ export default async function DashboardPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("head_sort")
+    .select("head_sort, timezone")
     .eq("id", userId)
     .maybeSingle();
 
@@ -117,6 +109,15 @@ export default async function DashboardPage({
     isHeadSortMode(savedSort)
       ? savedSort
       : "custom";
+
+  const viewerNow = nowInZone(
+    typeof profile?.timezone === "string" &&
+      profile.timezone
+      ? profile.timezone
+      : DEFAULT_TIME_ZONE
+  );
+  const currentMonthStart =
+    monthStartOf(viewerNow);
 
   const params = await searchParams;
 
@@ -155,8 +156,7 @@ export default async function DashboardPage({
 
     if (!monthlyBudget) {
       if (
-        requestedMonth >
-        getCurrentMonthStart()
+        requestedMonth > currentMonthStart
       ) {
         const result =
           await initializeMonthlyBudget(
@@ -236,8 +236,7 @@ export default async function DashboardPage({
     }
     }
   } else {
-    const currentMonth =
-      getCurrentMonthStart();
+    const currentMonth = currentMonthStart;
 
     const {
       data: currentBudget,
@@ -485,7 +484,8 @@ export default async function DashboardPage({
       head.state.finalBalance > 0
         ? daysUntilDue(
             monthlyBudget.month_start,
-            head.dueDay
+            head.dueDay,
+            viewerNow
           )
         : Number.POSITIVE_INFINITY;
 
