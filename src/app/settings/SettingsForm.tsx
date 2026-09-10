@@ -1,0 +1,216 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { useRefresh } from "@/components/RefreshProvider";
+import { updateProfile } from "./actions";
+import { CURRENCIES } from "./currencies";
+import SearchableSelect, {
+  type SelectOption,
+} from "./SearchableSelect";
+
+const FALLBACK_ZONES = [
+  "Asia/Kolkata",
+  "Asia/Dubai",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Sao_Paulo",
+  "Australia/Sydney",
+  "Pacific/Auckland",
+  "UTC",
+];
+
+function tzOffsetLabel(zone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat(
+      "en-US",
+      {
+        timeZone: zone,
+        timeZoneName: "longOffset",
+      }
+    ).formatToParts(new Date());
+    const raw =
+      parts.find(
+        (p) => p.type === "timeZoneName"
+      )?.value ?? "";
+    const normalized = raw.replace("GMT", "UTC");
+    return normalized === "UTC" || !normalized
+      ? "UTC+00:00"
+      : normalized;
+  } catch {
+    return "";
+  }
+}
+
+export default function SettingsForm({
+  email,
+  timezone,
+  currency,
+}: {
+  email: string;
+  timezone: string;
+  currency: string;
+}) {
+  const router = useRouter();
+  const { runRefresh } = useRefresh();
+
+  const [tz, setTz] = useState(timezone);
+  const [cur, setCur] = useState(currency);
+  const [saving, setSaving] = useState<
+    "timezone" | "currency" | null
+  >(null);
+  const [note, setNote] = useState("");
+  const [error, setError] = useState("");
+
+  const zoneOptions: SelectOption[] =
+    useMemo(() => {
+      let zones: string[] = FALLBACK_ZONES;
+      try {
+        const supported = (
+          Intl as unknown as {
+            supportedValuesOf?: (
+              k: string
+            ) => string[];
+          }
+        ).supportedValuesOf?.("timeZone");
+        if (supported && supported.length) {
+          zones = supported;
+        }
+      } catch {
+        // keep fallback
+      }
+      if (!zones.includes(tz)) {
+        zones = [tz, ...zones];
+      }
+      return zones.map((z) => {
+        const off = tzOffsetLabel(z);
+        const name = z.replace(/_/g, " ");
+        return {
+          value: z,
+          label: off
+            ? `${name}  ·  ${off}`
+            : name,
+          hint: `${off} ${z}`,
+        };
+      });
+    }, [tz]);
+
+  const currencyOptions: SelectOption[] =
+    useMemo(
+      () =>
+        CURRENCIES.map((c) => ({
+          value: c.code,
+          label: `${c.label} (${c.code})`,
+          hint: `${c.code} ${c.symbol}`,
+        })),
+      []
+    );
+
+  function save(
+    field: "timezone" | "currency",
+    next: string
+  ) {
+    setError("");
+    setNote("");
+    setSaving(field);
+
+    if (field === "timezone") setTz(next);
+    else setCur(next);
+
+    runRefresh(async () => {
+      const result = await updateProfile({
+        [field]: next,
+      });
+
+      setSaving(null);
+
+      if (!result.success) {
+        setError(
+          result.error ??
+            "Couldn't save that."
+        );
+        if (field === "timezone")
+          setTz(timezone);
+        else setCur(currency);
+        return;
+      }
+
+      setNote("Saved");
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <label className="mb-2 block text-sm font-medium text-[#34445e]">
+          Email
+        </label>
+        <div className="w-full rounded-xl border border-[#c9ddea] bg-[#eef4f9] px-4 py-3 text-[#647086]">
+          {email || "—"}
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-medium text-[#34445e]">
+          Timezone
+        </label>
+        <SearchableSelect
+          value={tz}
+          options={zoneOptions}
+          onChange={(v) =>
+            save("timezone", v)
+          }
+          disabled={saving !== null}
+          placeholder="Choose a timezone"
+        />
+        <p className="mt-1.5 text-xs text-[#647086]">
+          Used for &ldquo;due today&rdquo;, the
+          month-end reminder, and which month opens
+          by default.
+        </p>
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-medium text-[#34445e]">
+          Currency
+        </label>
+        <SearchableSelect
+          value={cur}
+          options={currencyOptions}
+          onChange={(v) =>
+            save("currency", v)
+          }
+          disabled={saving !== null}
+          placeholder="Choose a currency"
+        />
+      </div>
+
+      <div className="min-h-[20px] text-sm">
+        {saving && (
+          <span className="text-[#647086]">
+            Saving&hellip;
+          </span>
+        )}
+        {!saving && note && (
+          <span className="text-emerald-700">
+            {note}
+          </span>
+        )}
+        {!saving && error && (
+          <span className="text-red-600">
+            {error}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}

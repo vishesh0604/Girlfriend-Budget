@@ -7,6 +7,7 @@ import { getHomeSummary } from "./homeSummary";
 import LogoutButton from "./LogoutButton";
 import HelpButton from "./HelpButton";
 import DeveloperLogsButton from "./DeveloperLogsButton";
+import SettingsButton from "../settings/SettingsButton";
 
 const MONTH_NAMES = [
   "January",
@@ -65,6 +66,11 @@ export default async function HomePage() {
       {/* Developer Logs */}
       <div className="absolute left-4 top-4 z-20">
         <DeveloperLogsButton />
+      </div>
+
+      {/* Settings */}
+      <div className="absolute right-4 top-4 z-20">
+        <SettingsButton />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-4xl items-center justify-center">
