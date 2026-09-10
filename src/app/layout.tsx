@@ -25,8 +25,8 @@ const jakarta = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Budget Tracker",
-  description: "Personal Budget Tracker",
+  title: "Her Penny",
+  description: "Her Penny — your personal budget tracker",
 };
 
 export default function RootLayout({

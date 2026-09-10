@@ -75,15 +75,15 @@ export default async function HomePage() {
             </p>
 
             <h1 className="text-3xl font-bold tracking-tight text-[#26354d]">
-              Welcome to Budget Tracker
+              Welcome to Her Penny
             </h1>
 
-            <p className="mt-2 text-[#647086]">
-              What would you like to do?
+          <p className="mt-2 text-[#647086]">
+              Your personal budget tracker, what would you like to do?
             </p>
 
             <div className="mt-2">
-              <HelpButton title="How Budget Tracker works">
+              <HelpButton title="How Her Penny works">
                 <div>
                   <h3 className="font-semibold text-[#26354d]">
                     Fixed Expenses

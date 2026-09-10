@@ -69,8 +69,8 @@ export default function DeveloperLogsButton() {
               </h2>
 
               <p className="mt-1 text-sm leading-6 text-[#647086]">
-                A record of the latest changes and improvements made to the
-                Budget Tracker.
+                A record of the latest changes and improvements made to
+                Her Penny.
               </p>
 
               <div className="mt-5 overflow-hidden rounded-2xl border border-[#e6b7c9] bg-[#ffe7ef] shadow-sm">
@@ -81,7 +81,7 @@ export default function DeveloperLogsButton() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="text-sm font-semibold text-[#26354d]">
-                          Budget Tracker Development
+                          Her Penny Development
                         </p>
 
                         <p className="mt-1 text-xs text-[#647086]">

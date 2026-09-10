@@ -475,7 +475,7 @@ export function SpendingReportPdf({
             </View>
           )}
 
-          <Text style={styles.foot}>Budget Tracker</Text>
+          <Text style={styles.foot}>Her Penny</Text>
         </View>
       </Page>
     </Document>

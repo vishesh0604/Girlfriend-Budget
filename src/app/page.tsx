@@ -79,7 +79,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      title="Budget Tracker"
+      title="Her Penny"
       subtitle="Sign in to manage your monthly budget."
     >
       <form
