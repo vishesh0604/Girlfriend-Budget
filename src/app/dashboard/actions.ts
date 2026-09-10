@@ -9,6 +9,7 @@ import {
 } from "@/lib/supabase/budget/calculations";
 import { loadSpendingMoveTransferRecords } from "@/lib/supabase/spending/moves";
 import { getAuthUserId } from "@/lib/supabase/authUser";
+import { isHeadSortMode } from "./headSort";
 
 export async function initializeMonthlyBudget(
   monthStart: string
@@ -2945,6 +2946,50 @@ export async function deleteHeadPayment(
     .delete()
     .eq("id", paymentId)
     .eq("user_id", userId);
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  revalidatePath("/dashboard");
+
+  return { success: true };
+}
+
+/*
+ * Save how the Budget Head cards are ordered on the Fixed Expenses page.
+ * Stored on the user's profile so it sticks across visits and devices.
+ */
+export async function setHeadSort(
+  mode: string
+) {
+  const supabase = await createClient();
+
+  const userId = await getAuthUserId(supabase);
+
+  if (!userId) {
+    return {
+      success: false,
+      error: "You must be signed in.",
+    };
+  }
+
+  if (!isHeadSortMode(mode)) {
+    return {
+      success: false,
+      error: "Unknown sort option.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .upsert(
+      { id: userId, head_sort: mode },
+      { onConflict: "id" }
+    );
 
   if (error) {
     return {

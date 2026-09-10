@@ -12,6 +12,7 @@ import {
 } from "@/lib/supabase/budget/calculations";
 
 import { loadSpendingMoveTransferRecords } from "@/lib/supabase/spending/moves";
+import { nowInIST } from "@/lib/time";
 
 import { initializeMonthlyBudget } from "./actions";
 import SalaryEditor from "./SalaryEditor";
@@ -19,6 +20,11 @@ import BudgetHeadEditor from "./BudgetHeadEditor";
 import MonthNavigator from "./MonthNavigator";
 import PushRemainingButton from "./PushRemainingButton";
 import HomeButton from "./HomeButton";
+import SortHeadsButton from "./SortHeadsButton";
+import {
+  isHeadSortMode,
+  type HeadSortMode,
+} from "./headSort";
 import HelpButton from "../home/HelpButton";
 
 type DashboardPageProps = {
@@ -51,6 +57,44 @@ function isValidMonthStart(
   return /^\d{4}-\d{2}-01$/.test(value);
 }
 
+/*
+ * Days from today (IST) until a head's due day this month. Only
+ * meaningful for the current month; anything else sorts to the end.
+ * Negative = overdue.
+ */
+function daysUntilDue(
+  monthStart: string,
+  dueDay: number
+): number {
+  const now = nowInIST();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  const day = now.getUTCDate();
+
+  const currentMonthStart = `${year}-${String(
+    month + 1
+  ).padStart(2, "0")}-01`;
+
+  if (monthStart !== currentMonthStart) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const daysInMonth = new Date(
+    Date.UTC(year, month + 1, 0)
+  ).getUTCDate();
+
+  const due = Date.UTC(
+    year,
+    month,
+    Math.min(dueDay, daysInMonth)
+  );
+  const today = Date.UTC(year, month, day);
+
+  return Math.round(
+    (due - today) / 86400000
+  );
+}
+
 export default async function DashboardPage({
   searchParams,
 }: DashboardPageProps) {
@@ -61,6 +105,18 @@ export default async function DashboardPage({
   if (!userId) {
     redirect("/");
   }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("head_sort")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const savedSort = profile?.head_sort;
+  const headSort: HeadSortMode =
+    isHeadSortMode(savedSort)
+      ? savedSort
+      : "custom";
 
   const params = await searchParams;
 
@@ -395,10 +451,54 @@ export default async function DashboardPage({
     };
   });
 
-  // Order by the sort_order the user set in Customize Budget.
-  headStates.sort(
-    (a, b) => a.sortOrder - b.sortOrder
-  );
+  /*
+   * Order the cards per the user's chosen sort (profiles.head_sort).
+   * "custom" is the order set with Reorder heads in Customize Budget;
+   * every mode falls back to that order to break ties.
+   */
+  if (headSort === "name") {
+    headStates.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  } else if (headSort === "alloc-desc") {
+    headStates.sort(
+      (a, b) =>
+        Number(b.allocated_amount) -
+          Number(a.allocated_amount) ||
+        a.sortOrder - b.sortOrder
+    );
+  } else if (headSort === "alloc-asc") {
+    headStates.sort(
+      (a, b) =>
+        Number(a.allocated_amount) -
+          Number(b.allocated_amount) ||
+        a.sortOrder - b.sortOrder
+    );
+  } else if (headSort === "due") {
+    // Heads that still owe money and have a due day sort by urgency
+    // (most overdue first); everything else sinks to the bottom in
+    // custom order.
+    const urgency = (
+      head: (typeof headStates)[number]
+    ) =>
+      head.dueDay != null &&
+      head.state.finalBalance > 0
+        ? daysUntilDue(
+            monthlyBudget.month_start,
+            head.dueDay
+          )
+        : Number.POSITIVE_INFINITY;
+
+    headStates.sort(
+      (a, b) =>
+        urgency(a) - urgency(b) ||
+        a.sortOrder - b.sortOrder
+    );
+  } else {
+    headStates.sort(
+      (a, b) => a.sortOrder - b.sortOrder
+    );
+  }
 
   /*
    * Find the most recent transfer for each
@@ -803,12 +903,21 @@ export default async function DashboardPage({
 
         <section className="mt-8">
           <div className="mb-4">
-            <h2 className="text-xl font-semibold">
-              Budget Heads
-            </h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xl font-semibold">
+                Budget Heads
+              </h2>
+
+              {headStates.length > 1 && (
+                <SortHeadsButton
+                  current={headSort}
+                />
+              )}
+            </div>
 
             <p className="mt-1 text-sm text-zinc-500">
-              Your monthly allocations and current balances.
+              Your monthly allocations and current
+              balances.
             </p>
           </div>
 
